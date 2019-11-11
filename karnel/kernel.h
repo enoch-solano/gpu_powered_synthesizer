@@ -13,7 +13,12 @@
 #define NUM_VOICES 16
 #define NUM_HARMS  16
 
+struct v_udata {
+	float freqs[NUM_VOICES * NUM_HARMS];	// contains freqs for every harmonic of every voice
+	float gains[NUM_VOICES * NUM_HARMS];	// contains corresponding gain for every harmonic
 
+	float v_gains[NUM_VOICES];				// gain for overall voice
+};
 
 
 namespace Additive {
@@ -34,4 +39,11 @@ namespace Additive {
 	void endSimpleSynth();
 	void my_simple_compute(float *buffer, float angle);
 
+
+	void initVSynth(int numSample, const v_udata& v_user_data);
+	void updateFreqsVSynth(float *freqs);
+	void updateGainsVSynth(float *gains);
+	void updateVGainsVSynth(float *v_gains);
+	void endVSynth();
+	void my_v_compute(float *buffer, float angle);
 }

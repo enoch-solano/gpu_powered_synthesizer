@@ -34,6 +34,61 @@ void checkCUDAError(const char *msg, int line = -1) {
 //************************************* my synth with voice/harmonics *************************************//
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+__global__ void my_simp_vh_kernel(float *outBuffer, float *freqs, float *gains,
+	float angle, int numSamples, int numSinusoids)
+{
+	int idx = blockIdx.x * blockDim.x + threadIdx.x;
+
+	if (idx < numSamples) {
+		// samples sine wave in discrete steps
+		angle = angle + 2.f * M_PI * idx / 44100.f;
+		float buff_val = 0.f;
+
+		for (int i = 0; i < 16 /*NUM_SINUSOIDS*/; i++) {
+			buff_val += gains[i] * __sinf(angle * freqs[i]);
+		}
+
+		// buffer to be sent to DAC
+		outBuffer[idx] = buff_val;
+	}
+}
+
+void initVSynth(int numSample, const v_udata& v_user_data) {
+	// initializes global variables with appropriate values
+	numSamples = numSample;
+	numSinusoids = NUM_VOICES * NUM_HARMS;
+
+	// allocates memory in GPU
+	cudaMalloc((void**)&dev_frequencies, numSinusoids * sizeof(float));
+	checkCUDAErrorWithLine("dev_freqs malloc failed");
+	cudaMalloc((void**)&dev_gains, numSinusoids * sizeof(float));
+	checkCUDAErrorWithLine("dev_gains malloc failed");
+	cudaMalloc((void**)&dev_buffer, numSamples * sizeof(float));
+	checkCUDAErrorWithLine("dev_buffer malloc failed");
+
+	// copy memory from CPU to GPU
+	cudaMemcpy(dev_frequencies, v_user_data.freqs, numSinusoids * sizeof(float), cudaMemcpyHostToDevice);
+	checkCUDAErrorWithLine("dev_freqs memcpy failed");
+	cudaMemcpy(dev_gains, v_user_data.gains, numSinusoids * sizeof(float), cudaMemcpyHostToDevice);
+	checkCUDAErrorWithLine("dev_gains memcpy failed");
+
+	cudaDeviceSynchronize();
+}
+void updateFreqsVSynth(float *freqs) {
+
+}
+void updateGainsVSynth(float *gains) {
+
+}
+void updateVGainsVSynth(float *v_gains) {
+
+}
+void endVSynth() {
+
+}
+void my_v_compute(float *buffer, float angle) {
+
+}
 
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////
