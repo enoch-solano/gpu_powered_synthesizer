@@ -11,7 +11,7 @@
 #include <stdexcept>
 
 #define NUM_VOICES 12
-#define NUM_HARMS  20
+#define NUM_HARMS  12
 
 
 struct v_udata {

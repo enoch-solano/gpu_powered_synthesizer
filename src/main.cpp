@@ -17,10 +17,6 @@ static float angle_m = 0;
 //#define SIMPLE 1
 //#define NOT_SIMPLE 1
 
-/////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//************************************* my simple (interactive) synth *************************************//
-/////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 struct udata {
 	float freq[NUM_USER_PARAM];
 	float gain[NUM_USER_PARAM];
@@ -43,6 +39,27 @@ void print_user_data(const udata &user_data) {
 	printf("%.2f\n", user_data.gain[NUM_USER_PARAM - 1]);
 }
 
+void print_harmonic(int v_idx, const v_udata &data) {
+	printf("\nThe harmonics of voice (%d):\n", v_idx+1);
+
+	printf("freq: ");
+	for (int i = 0; i < NUM_HARMS - 1; i++) {
+		printf("%.1f,\t", data.freqs[v_idx*NUM_HARMS + i]);
+	}
+
+	printf("%.1f\n", data.freqs[v_idx*NUM_HARMS + NUM_HARMS - 1]);
+
+
+	printf("amps: ");
+	for (int i = 0; i < NUM_HARMS - 1; i++) {
+		printf("%.1f,\t", data.gains[v_idx*NUM_HARMS + i]);
+	}
+
+	printf("%.1f\n\n", data.gains[v_idx*NUM_HARMS + NUM_HARMS - 1]);
+}
+
+//////////////////////////////////////////////////////////////////////////////////////
+
 int simple_callback(void *outputBuffer, void* inputBuffer, unsigned int nBufferFrames,
 					double streamTime, RtAudioStreamStatus status, void *userData)
 {
@@ -57,13 +74,13 @@ int simple_callback(void *outputBuffer, void* inputBuffer, unsigned int nBufferF
 }
 
 int voice_callback(void *outputBuffer, void* inputBuffer, unsigned int nBufferFrames,
-				   double streamTime, RtAudioStreamStatus status, void *userData)
+	double streamTime, RtAudioStreamStatus status, void *userData)
 {
 	if (status) std::cout << "Stream underflow detected!" << std::endl;
 
 	// gets buffer data from GPU
 	Additive::my_v_compute((float*)outputBuffer, angle_m);
-	
+
 	// increments angle (i.e. time) 
 	angle_m += 2.0f * _PI * NUM_SAMPLES / 44100.f;
 	angle_m = fmod(angle_m, 44100.f);
@@ -71,145 +88,7 @@ int voice_callback(void *outputBuffer, void* inputBuffer, unsigned int nBufferFr
 	return 0;
 }
 
-/////////////////////////////////////////////////////////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-
-// Two-channel sawtooth wave generator.
-int saw( void *outputBuffer, void *inputBuffer, unsigned int nBufferFrames,
-         double streamTime, RtAudioStreamStatus status, void *userData )
-{
-  unsigned int i, j;
-  double *buffer = (double *) outputBuffer;
-  double *lastValues = (double *) userData;
-  if ( status )
-    std::cout << "Stream underflow detected!" << std::endl;
-  // Write interleaved audio data.
-  for ( i=0; i<nBufferFrames; i++ ) {
-    for ( j=0; j<2; j++ ) {
-      *buffer++ = lastValues[j];
-      lastValues[j] += 0.005 * (j+1+(j*0.1));
-      if ( lastValues[j] >= 1.0 ) lastValues[j] -= 2.0;
-    }
-  }
-  return 0;
-}
-
-int additive(void *outputBuffer, void* inputBuffer, unsigned int nBufferFrames,
-			 double streamTime, RtAudioStreamStatus status, void *UserData) 
-{
-	float *buffer = (float *)outputBuffer;
-	Sine** sine = (Sine **) UserData;
-    if ( status ) std::cout << "Stream underflow detected!" << std::endl;
-	for (unsigned int i = 0; i < nBufferFrames; i++) {
-		float val = 0; 
-		for (unsigned int j = 0; j < NUM_SINES; j++) {
-			val += sine[j]->tick();
-		}
-		*buffer++ = val;
-	}
-	return 0;
-}
-
-int additive_sine(void *outputBuffer, void* inputBuffer, unsigned int nBufferFrames,
-				  double streamTime, RtAudioStreamStatus status, void *userData) 
-{
-  unsigned int i, j;
-  float *buffer = (float *) outputBuffer;
-  float *freqs = (float *) userData;
-  
-  if ( status ) std::cout << "Stream underflow detected!" << std::endl;
-  
-  // Write interleaved audio data.
-  for (i = 0; i < nBufferFrames; i++) {
-	  double val = 0;
-	  float angle = 2.0f * _PI * i / 44100;
-	  for (j = 0; j < NUM_SINES; j++) {
-		  val += sin(angle * freqs[j]) / NUM_SINES;
-	  }
-
-	  *buffer++ = val;
-  }
-  return 0;
-
-}
-
-int additive_gpu(void *outputBuffer, void* inputBuffer, unsigned int nBufferFrames,
-				 double streamTime, RtAudioStreamStatus status, void *userData)
-{
-    if ( status ) std::cout << "Stream underflow detected!" << std::endl;
-	
-	Additive::compute_sinusoid_gpu_simple((float*)outputBuffer, angle_m);
-
-	angle_m += 2.0f * _PI * NUM_SAMPLES / 44100.f;
-	angle_m = fmod(angle_m, 44100.f);
-
-	return 0;
-}
-
-int additive_gpu_complex(void *outputBuffer, void* inputBuffer, unsigned int nBufferFrames, 
-						 double streamTime, RtAudioStreamStatus status, void *userData) 
-{
-	static float time = 0;
-
-    if ( status ) std::cout << "Stream underflow detected!" << std::endl;
-
-    Additive::compute_sinusoid_hybrid((float*)outputBuffer, &time);
-	time += NUM_SAMPLES / 44100.f;
-//	time = fmod(time, 44100.f);
-	return 0;
-}
-
-#define END_SECS 15
-#define MAXSFREQ 3000
-#define MAXEFREQ 12000
-#define FUNDFREQ 43.654
-//developed by jmccarty https://ccrma.stanford.edu/~jmccarty/220/ass5/main.html
-void fill_THX(float* freq_start, float* freq_end, float* angle, float *gains, int numSinusoids) {
-	float randFreq;
-	for (int i=0; i<NUM_SINES; i++){
-        //selects random values in range 0->1
-        randFreq=(float)(rand()%MAXSFREQ)/(float)MAXSFREQ; 
-        //set a starting freqeuncy within range fundamental to max start freq.
-        //in order to have more LF components the randnum is squared
-		freq_start[i] = randFreq * randFreq*(float)(MAXSFREQ - FUNDFREQ) + FUNDFREQ;
-        //generate rand num for end freq.
-        randFreq=(float)(rand()%MAXEFREQ)/(float)MAXEFREQ;
-        //set end frequencies to ocatve multiples of fundamental
-        freq_end[i]=(float)pow(2,(int)(floor(randFreq*9)))*FUNDFREQ;
-        //set half of the end freqs to a fifths above fundamental
-        if((i % 2) == 0){
-			freq_end[i]*=1.5;
-		}
-    }
-        //for 5% of the oscillators chose a random end freq.
-        //this adds a little inharmonic content
-    for (int i = (int)NUM_SINES*0.05; i>=0; i--) {
-        randFreq=(float)(rand()%MAXEFREQ)/(float)MAXEFREQ;
-        freq_end[i]=(randFreq*200.0+30.0)*FUNDFREQ;
-    }
-   
-    //generate oscillators, lower frequency components have higher amp.
-    for (int i=0; i < NUM_SINES;i++) {   
-		if (i <= (int)NUM_SINES*0.05) {
-			gains[i] = 0.3;
-			//gains[i] = 0.03;
-		}
-		else if (freq_end[i] < 2.0*FUNDFREQ) {
-			gains[i] = 4.0f;
-			//gains[i] = 0.4f;
-		}	
-		else if (freq_end[i] < 6.0*FUNDFREQ) {
-			gains[i] = 2.0f;
-			//gains[i] = 0.2f;
-		} 	
-		else {
-			gains[i] = 1.0;
-			//gains[i] = 0.1f;
-		}
-
-    }
-}
+//////////////////////////////////////////////////////////////////////////////////////
 
 int user_quit(char *input) {
 	return strcmp(input, "quit") == 0 || strcmp(input, "Quit") == 0;
@@ -240,11 +119,24 @@ char get_char() {
 }
 
 void load_square_wave(int v_idx, v_udata& v_user_data) {
-	int f = 6;
+	float f = 110;
 
 	for (int i = 0; i < NUM_HARMS; i++) {
 		v_user_data.gains[v_idx*NUM_HARMS + i] = 1.f / (1.f + (2*i));
-		v_user_data.freqs[v_idx*NUM_HARMS + i] = (1.f + (2 * i)) * f;
+		v_user_data.freqs[v_idx*NUM_HARMS + i] = (1.f + (2*i)) * f;
+	}
+
+	Additive::updateFreqsVSynth(v_user_data.freqs);
+	Additive::updateGainsVSynth(v_user_data.gains);
+}
+
+void load_sawtooth(int v_idx, v_udata& v_user_data) {
+	float f = 110;
+	float L = 1;
+
+	for (int i = 0; i < NUM_HARMS; i++) {
+		v_user_data.gains[v_idx*NUM_HARMS + i] = (-1.f / (_PI * (i+1)));
+		v_user_data.freqs[v_idx*NUM_HARMS + i] = (i * _PI / L) * f;
 	}
 
 	Additive::updateFreqsVSynth(v_user_data.freqs);
@@ -254,8 +146,7 @@ void load_square_wave(int v_idx, v_udata& v_user_data) {
 int select_preset(int v_idx, v_udata& v_user_data) {
 	printf(" | | Select a preset: \n");
 	printf(" | |   > 1 -- square wave \n");
-	printf(" | |   > 2 -- saw tooth \n");
-	printf(" | |   > 3 -- to modify a harmonic \n");
+	printf(" | |   > 2 -- sawtooth wave \n");
 
 	int preset = 0;
 
@@ -267,10 +158,7 @@ int select_preset(int v_idx, v_udata& v_user_data) {
 			load_square_wave(v_idx, v_user_data);
 			break;
 		case 2:
-			load_square_wave(v_idx, v_user_data);
-			break;
-		case 3:
-			load_square_wave(v_idx, v_user_data);
+			load_sawtooth(v_idx, v_user_data);
 			break;
 		default:
 			preset = 0;
@@ -498,6 +386,8 @@ for (int i = 0; i < NUM_VOICES; i++) {
 
 Additive::initVSynth(NUM_SAMPLES, v_user_data);
 
+print_harmonic(0, v_user_data);
+
 try {
 	dac.openStream(&parameters, NULL, RTAUDIO_FLOAT32, sampleRate,
 		&bufferFrames, &voice_callback, (void*)&v_user_data);
@@ -555,12 +445,14 @@ while (RUNNING) {
 				if (mode != QUIT || mode != INVALID_MODE) {
 					if (mode == S_PRESET_MODE) {
 						select_preset(voice_idx, v_user_data);
+						print_harmonic(voice_idx, v_user_data);
 					}
 					else if (mode == V_MODE) {
 						modify_voice_gain(voice_idx, v_user_data);
 					}
 					else if (mode == H_MODE) {
 						modify_harmonic(voice_idx, v_user_data);
+						print_harmonic(voice_idx, v_user_data);
 					}
 				}
 			}
@@ -572,43 +464,6 @@ while (RUNNING) {
 		}
 	}
 }
-
-/* 
-
-USER I/O LAYOUT
-	> VOICE_TO_EDIT
-		> <i> := if 1 < i <= numVoices, set voice to modify to be <i>
-			> HOW_TO_EDIT_VOICE
-				> <l> := LOAD_PRESET
-					> LOAD_PRESET -- PROMPT AVAILABLE PRESETS (1-n)
-						> <i> := if 1 < i <= n, load in preset i; then go to VOICE_TO_EDIT
-						> <other> := re-prompt preset
-
-				> <g> := MODIFY_VOICE_GAIN
-					> VG_VALUE -- PROMPT for VALUE
-						> <i> := set VG to <i>; then go to VOICE_TO_EDIT
-
-
-				> <h> := MODIFY_HARMONICS
-					> HARMONIC_TO_EDIT
-						> <i> := if 1 < i <= numHarmonics, set voice to modify to be <i>
-							> HOW_TO_EDIT_HARMONIC
-								> <f>
-								> <g>
-
-						> <other> := re-prompt HARMONIC_TO_EDIT
-
-
-				> <e> := go to VOICE_TO_EDIT
-				> <other> := re-prompt HOW_TO_EDIT_VOICE
-
-		> <other> := re-prompt VOICE_TO_EDIT
-
-*/
-
-
-
-
 
 #endif 
 
