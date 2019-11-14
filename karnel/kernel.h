@@ -10,8 +10,9 @@
 #include <chrono>
 #include <stdexcept>
 
-#define NUM_VOICES 16
-#define NUM_HARMS  16
+#define NUM_VOICES 12
+#define NUM_HARMS  20
+
 
 struct v_udata {
 	float freqs[NUM_VOICES * NUM_HARMS];	// contains freqs for every harmonic of every voice

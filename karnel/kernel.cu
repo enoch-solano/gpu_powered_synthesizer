@@ -11,9 +11,9 @@
 #define SAMPLING_FREQ 44100
 //#define SIMPLE 0
 #define checkCUDAErrorWithLine(msg) checkCUDAError(msg, __LINE__)
-float* dev_frequencies, *dev_buffer, *dev_tmp_buffer, *dev_gains, *dev_target, *dev_angle;
+float* dev_freqs, *dev_gains, *dev_vgains, *dev_buffer, *dev_tmp_buffer, *dev_target, *dev_angle;
 float slideTime;
-int numSamples, numSinusoids;
+int numSamples, numSinusoids, numVoices;
 
 /**
 * Check for CUDA errors; print and exit if there was a problem.
@@ -34,8 +34,8 @@ void checkCUDAError(const char *msg, int line = -1) {
 //************************************* my synth with voice/harmonics *************************************//
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-__global__ void my_simp_vh_kernel(float *outBuffer, float *freqs, float *gains,
-	float angle, int numSamples, int numSinusoids)
+__global__ void my_vh_kernel(float *outBuffer, float *freqs, float *gains, float *vgains,
+								float angle, int numSamples, int numSinusoids, int numVoices)
 {
 	int idx = blockIdx.x * blockDim.x + threadIdx.x;
 
@@ -43,9 +43,12 @@ __global__ void my_simp_vh_kernel(float *outBuffer, float *freqs, float *gains,
 		// samples sine wave in discrete steps
 		angle = angle + 2.f * M_PI * idx / 44100.f;
 		float buff_val = 0.f;
+		int numHarmonics = numSinusoids / numVoices;
 
-		for (int i = 0; i < 16 /*NUM_SINUSOIDS*/; i++) {
-			buff_val += gains[i] * __sinf(angle * freqs[i]);
+		for (int i = 0; i < numVoices; i++) {
+			for (int j = 0; j < numHarmonics; j++) {
+				buff_val += vgains[i] * gains[i*numHarmonics + j] * __sinf(angle * freqs[i*numHarmonics + j]);
+			}
 		}
 
 		// buffer to be sent to DAC
@@ -53,41 +56,63 @@ __global__ void my_simp_vh_kernel(float *outBuffer, float *freqs, float *gains,
 	}
 }
 
-void initVSynth(int numSample, const v_udata& v_user_data) {
+void Additive::my_v_compute(float *buffer, float angle) {
+	int threadsPerBlock = 256;
+	int blocksPerGrid = (numSamples + threadsPerBlock - 1) / threadsPerBlock;
+
+	my_vh_kernel <<< blocksPerGrid, threadsPerBlock >>> (dev_buffer, dev_freqs, dev_gains, dev_vgains,
+															angle, numSamples, numSinusoids, numVoices);
+
+	// updates the buffer with dev_buffer computed in GPU
+	cudaMemcpy(buffer, dev_buffer, numSamples * sizeof(float), cudaMemcpyDeviceToHost);
+}
+
+void Additive::initVSynth(int numSample, const v_udata& v_user_data) {
 	// initializes global variables with appropriate values
 	numSamples = numSample;
 	numSinusoids = NUM_VOICES * NUM_HARMS;
+	numVoices = NUM_VOICES;
 
 	// allocates memory in GPU
-	cudaMalloc((void**)&dev_frequencies, numSinusoids * sizeof(float));
+	cudaMalloc((void**)&dev_freqs, numSinusoids * sizeof(float));
 	checkCUDAErrorWithLine("dev_freqs malloc failed");
 	cudaMalloc((void**)&dev_gains, numSinusoids * sizeof(float));
 	checkCUDAErrorWithLine("dev_gains malloc failed");
+	cudaMalloc((void**)&dev_vgains, numVoices * sizeof(float));
+	checkCUDAErrorWithLine("dev_vgains malloc failed");
 	cudaMalloc((void**)&dev_buffer, numSamples * sizeof(float));
 	checkCUDAErrorWithLine("dev_buffer malloc failed");
 
 	// copy memory from CPU to GPU
-	cudaMemcpy(dev_frequencies, v_user_data.freqs, numSinusoids * sizeof(float), cudaMemcpyHostToDevice);
+	cudaMemcpy(dev_freqs, v_user_data.freqs, numSinusoids * sizeof(float), cudaMemcpyHostToDevice);
 	checkCUDAErrorWithLine("dev_freqs memcpy failed");
 	cudaMemcpy(dev_gains, v_user_data.gains, numSinusoids * sizeof(float), cudaMemcpyHostToDevice);
 	checkCUDAErrorWithLine("dev_gains memcpy failed");
+	cudaMemcpy(dev_vgains, v_user_data.v_gains, numVoices * sizeof(float), cudaMemcpyHostToDevice);
+	checkCUDAErrorWithLine("dev_vgains memcpy failed");
 
 	cudaDeviceSynchronize();
 }
-void updateFreqsVSynth(float *freqs) {
-
+void Additive::updateFreqsVSynth(float *freqs) {
+	// copy memory from CPU to GPU
+	cudaMemcpy(dev_freqs, freqs, numSinusoids * sizeof(float), cudaMemcpyHostToDevice);
+	checkCUDAErrorWithLine("frequencies memcpy failed");
 }
-void updateGainsVSynth(float *gains) {
-
+void Additive::updateGainsVSynth(float *gains) {
+	// copy memory from CPU to GPU
+	cudaMemcpy(dev_gains, gains, numSinusoids * sizeof(float), cudaMemcpyHostToDevice);
+	checkCUDAErrorWithLine("gains memcpy failed");
 }
-void updateVGainsVSynth(float *v_gains) {
-
+void Additive::updateVGainsVSynth(float *v_gains) {
+	// copy memory from CPU to GPU
+	cudaMemcpy(dev_vgains, v_gains, numVoices * sizeof(float), cudaMemcpyHostToDevice);
+	checkCUDAErrorWithLine("voice gains memcpy failed");
 }
-void endVSynth() {
-
-}
-void my_v_compute(float *buffer, float angle) {
-
+void Additive::endVSynth() {
+	cudaFree(dev_freqs);
+	cudaFree(dev_gains);
+	cudaFree(dev_vgains);
+	cudaFree(dev_buffer);
 }
 
 
@@ -122,7 +147,7 @@ void Additive::my_simple_compute(float *buffer, float angle)
 	int threadsPerBlock = 256;
 	int blocksPerGrid = (numSamples + threadsPerBlock - 1) / threadsPerBlock;
 
-	my_simple_kernel <<< blocksPerGrid, threadsPerBlock >>> (dev_buffer, dev_frequencies, dev_gains,
+	my_simple_kernel <<< blocksPerGrid, threadsPerBlock >>> (dev_buffer, dev_freqs, dev_gains,
 															 angle, numSamples, numSinusoids);
 
 	// updates the buffer with buffer computed in GPU
@@ -136,7 +161,7 @@ void Additive::initSimpleSynth(int numSinusoid, int numSample, float *init_freqs
 	numSinusoids = numSinusoid;
 
 	// allocates memory in GPU
-	cudaMalloc((void**)&dev_frequencies, numSinusoids * sizeof(float));
+	cudaMalloc((void**)&dev_freqs, numSinusoids * sizeof(float));
 	checkCUDAErrorWithLine("dev_freqs malloc failed");
 	cudaMalloc((void**)&dev_gains, numSinusoids * sizeof(float));
 	checkCUDAErrorWithLine("dev_gains malloc failed");
@@ -144,7 +169,7 @@ void Additive::initSimpleSynth(int numSinusoid, int numSample, float *init_freqs
 	checkCUDAErrorWithLine("dev_buffer malloc failed");
 
 	// copy memory from CPU to GPU
-	cudaMemcpy(dev_frequencies, init_freqs, numSinusoids * sizeof(float), cudaMemcpyHostToDevice);
+	cudaMemcpy(dev_freqs, init_freqs, numSinusoids * sizeof(float), cudaMemcpyHostToDevice);
 	checkCUDAErrorWithLine("dev_freqs memcpy failed");
 	cudaMemcpy(dev_gains, init_gains, numSinusoids * sizeof(float), cudaMemcpyHostToDevice);
 	checkCUDAErrorWithLine("dev_gains memcpy failed");
@@ -154,7 +179,7 @@ void Additive::initSimpleSynth(int numSinusoid, int numSample, float *init_freqs
 
 void Additive::updateFreqsSimpleSynth(float *freqs) {
 	// copy memory from CPU to GPU
-	cudaMemcpy(dev_frequencies, freqs, numSinusoids * sizeof(float), cudaMemcpyHostToDevice);
+	cudaMemcpy(dev_freqs, freqs, numSinusoids * sizeof(float), cudaMemcpyHostToDevice);
 	checkCUDAErrorWithLine("initial frequencies memcpy failed");
 }
 
@@ -166,7 +191,7 @@ void Additive::updateGainsSimpleSynth(float *gains) {
 
 
 void Additive::endSimpleSynth() {
-	cudaFree(dev_frequencies);
+	cudaFree(dev_freqs);
 	cudaFree(dev_buffer);
 	cudaFree(dev_gains);
 }
@@ -179,9 +204,9 @@ void Additive::initSynth(int numSinusoid, int numSample, float* host_frequencies
 	
 	numSamples = numSample;
 	numSinusoids = numSinusoid;
-	cudaMalloc((void**)&dev_frequencies, numSinusoids * sizeof(float));
+	cudaMalloc((void**)&dev_freqs, numSinusoids * sizeof(float));
 	cudaMalloc((void**)&dev_buffer, numSamples * sizeof(float));
-	cudaMemcpy(dev_frequencies, host_frequencies, numSinusoids * sizeof(float), cudaMemcpyHostToDevice);
+	cudaMemcpy(dev_freqs, host_frequencies, numSinusoids * sizeof(float), cudaMemcpyHostToDevice);
 	
 	cudaDeviceSynchronize();
 }
@@ -191,10 +216,10 @@ void Additive::initSynth_THX(int numSinusoid, int numSample, float* host_start_f
 	numSinusoids = numSinusoid;
 	slideTime = slide;
 
-	cudaMalloc((void**)&dev_frequencies, numSinusoids * sizeof(float));
-	checkCUDAErrorWithLine("dev_frequencies malloc failed");
-	cudaMemcpy(dev_frequencies, host_start_freq, numSinusoids * sizeof(float), cudaMemcpyHostToDevice);
-	checkCUDAErrorWithLine("dev_frequencies memcpy failed");
+	cudaMalloc((void**)&dev_freqs, numSinusoids * sizeof(float));
+	checkCUDAErrorWithLine("dev_freqs malloc failed");
+	cudaMemcpy(dev_freqs, host_start_freq, numSinusoids * sizeof(float), cudaMemcpyHostToDevice);
+	checkCUDAErrorWithLine("dev_freqs memcpy failed");
 	cudaMalloc((void**)&dev_buffer, numSamples * sizeof(float));
 	checkCUDAErrorWithLine("dev_buffer malloc failed");
 	cudaMalloc((void**)&dev_tmp_buffer, numSamples *THREADS_PER_SAMPLE* sizeof(float));
@@ -215,7 +240,7 @@ void Additive::initSynth_THX(int numSinusoid, int numSample, float* host_start_f
 }
 
 void Additive::endSynth_THX() {
-	cudaFree(dev_frequencies);
+	cudaFree(dev_freqs);
 	cudaFree(dev_buffer);
 	cudaFree(dev_tmp_buffer);
 	cudaFree(dev_gains);
@@ -224,7 +249,7 @@ void Additive::endSynth_THX() {
 }
 void Additive::endSynth() {
 	cudaFree(dev_buffer);
-	cudaFree(dev_frequencies);
+	cudaFree(dev_freqs);
 }
 
 __global__ void sin_kernel_simple(float *outBuffer, float *frequencies, float angle, int numSamples, int numSinusoids) {
@@ -245,8 +270,8 @@ void Additive::compute_sinusoid_gpu_simple(float* buffer, float angle) {
 	int threadsPerBlock = 256; 
 	int blocksPerGrid = (numSamples + threadsPerBlock - 1) / threadsPerBlock;
 
-	sin_kernel_simple <<< blocksPerGrid, threadsPerBlock >>> (dev_buffer, dev_frequencies, angle, numSamples, numSinusoids);
-//	sin_kernel_simple <<< 1, 256 >>> (dev_buffer, dev_frequencies, angle, numSamples, numSinusoids);
+	sin_kernel_simple <<< blocksPerGrid, threadsPerBlock >>> (dev_buffer, dev_freqs, angle, numSamples, numSinusoids);
+//	sin_kernel_simple <<< 1, 256 >>> (dev_buffer, dev_freqs, angle, numSamples, numSinusoids);
 	
 	cudaMemcpy(buffer, dev_buffer, numSamples * sizeof(float), cudaMemcpyDeviceToHost);
 }
@@ -323,7 +348,7 @@ void Additive::compute_sinusoid_hybrid(float* buffer, float * time){
 	int blocksPerGrid = (numThreads + threadsPerBlock - 1) / threadsPerBlock;
 
 	
-	sin_kernel_fast <<<blocksPerGrid, threadsPerBlock >>>(dev_tmp_buffer, dev_frequencies, dev_target, dev_angle, dev_gains, numThreadsPerBlock, numSinusoids, *time, slideTime, numSamples);
+	sin_kernel_fast <<<blocksPerGrid, threadsPerBlock >>>(dev_tmp_buffer, dev_freqs, dev_target, dev_angle, dev_gains, numThreadsPerBlock, numSinusoids, *time, slideTime, numSamples);
 	//checkCUDAErrorWithLine("sin_kernel_fast failed");
 	blocksPerGrid = (numSamples + threadsPerBlock - 1) / threadsPerBlock;
 	sum_blocks <<<blocksPerGrid, threadsPerBlock >> >(dev_tmp_buffer, dev_buffer, numSamples);

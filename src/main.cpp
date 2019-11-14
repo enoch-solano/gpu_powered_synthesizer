@@ -56,6 +56,21 @@ int simple_callback(void *outputBuffer, void* inputBuffer, unsigned int nBufferF
 	return 0;
 }
 
+int voice_callback(void *outputBuffer, void* inputBuffer, unsigned int nBufferFrames,
+				   double streamTime, RtAudioStreamStatus status, void *userData)
+{
+	if (status) std::cout << "Stream underflow detected!" << std::endl;
+
+	// gets buffer data from GPU
+	Additive::my_v_compute((float*)outputBuffer, angle_m);
+	
+	// increments angle (i.e. time) 
+	angle_m += 2.0f * _PI * NUM_SAMPLES / 44100.f;
+	angle_m = fmod(angle_m, 44100.f);
+
+	return 0;
+}
+
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -196,6 +211,114 @@ void fill_THX(float* freq_start, float* freq_end, float* angle, float *gains, in
     }
 }
 
+int user_quit(char *input) {
+	return strcmp(input, "quit") == 0 || strcmp(input, "Quit") == 0;
+}
+
+int get_int() {
+	char user_in[256];
+	scanf("%s", user_in);
+	fflush(stdin);
+
+	if (user_quit(user_in)) {
+		return -1;
+	}
+
+	return atoi(user_in);
+}
+
+char get_char() {
+	char user_in[256];
+	scanf("%s", user_in);
+	fflush(stdin);
+
+	if (user_quit(user_in)) {
+		return 'q';
+	}
+
+	return user_in[0];
+}
+
+void load_square_wave(int v_idx, v_udata& v_user_data) {
+	int f = 6;
+
+	for (int i = 0; i < NUM_HARMS; i++) {
+		v_user_data.gains[v_idx*NUM_HARMS + i] = 1.f / (1.f + (2*i));
+		v_user_data.freqs[v_idx*NUM_HARMS + i] = (1.f + (2 * i)) * f;
+	}
+
+	Additive::updateFreqsVSynth(v_user_data.freqs);
+	Additive::updateGainsVSynth(v_user_data.gains);
+}
+
+int select_preset(int v_idx, v_udata& v_user_data) {
+	printf(" | | Select a preset: \n");
+	printf(" | |   > 1 -- square wave \n");
+	printf(" | |   > 2 -- saw tooth \n");
+	printf(" | |   > 3 -- to modify a harmonic \n");
+
+	int preset = 0;
+
+	while (preset == 0) {
+		preset = get_int();
+
+		switch (preset) {
+		case 1:
+			load_square_wave(v_idx, v_user_data);
+			break;
+		case 2:
+			load_square_wave(v_idx, v_user_data);
+			break;
+		case 3:
+			load_square_wave(v_idx, v_user_data);
+			break;
+		default:
+			preset = 0;
+		}
+	}
+	
+	return 1;
+}
+
+
+int modify_voice_gain(int v_idx, v_udata& v_user_data) {
+	printf(" | | Enter the value to update the amplitude of the voice: ");
+	v_user_data.v_gains[v_idx] = get_int();
+
+	Additive::updateVGainsVSynth(v_user_data.v_gains);
+
+	return 1;
+}
+
+
+int modify_harmonic(int v_idx, v_udata& v_user_data) {
+	int h_idx = -1;
+	printf(" | | Select a harmonic (enter a number between 1-%d): ", NUM_HARMS);
+	while (h_idx < 0) {
+		h_idx = get_int();
+
+		if (h_idx == 0 || h_idx > NUM_HARMS) {
+			printf(" | | Invalid harmonic selected. ");
+			printf("Select a harmonic (enter a number between 1-%d): ", NUM_HARMS);
+			h_idx = -1;
+		}
+	}
+
+	h_idx--;	// makes sure it's zero indexed
+
+	printf(" | | | Enter the value to update the amplitude of the harmonic: ");
+	v_user_data.gains[v_idx*NUM_HARMS + h_idx] = get_int();
+
+	printf(" | | | Enter the value to update the frequency of the harmonic: ");
+	v_user_data.freqs[v_idx*NUM_HARMS + h_idx] = get_int();
+	printf("\n");
+
+	Additive::updateFreqsVSynth(v_user_data.freqs);
+	Additive::updateGainsVSynth(v_user_data.gains);
+
+	return 1;
+}
+
 int main() {
 
   RtAudio dac;
@@ -211,62 +334,9 @@ int main() {
 
   unsigned int sampleRate = 44100;
   unsigned int bufferFrames = NUM_SAMPLES; // 256 sample frames
-
-  Sine* sine[NUM_SINES];
-  for (int i = 1; i <= NUM_SINES; i++) {
-	  Sine* newsine = new Sine();
-	  newsine->setSamplingRate(sampleRate);
-	  newsine->setFrequency(440 + i* 10);
-	  sine[i-1] = newsine;
-  }
-
-  float freqs[NUM_SINES];
-  for (int i = 1; i <= NUM_SINES; i++) {
-	  freqs[i-1] =   440 + i*10;
-  }
  
-#if SIMPLE
-  Additive::initSynth(NUM_SINES, bufferFrames, freqs);
-  try {
-    dac.openStream( &parameters, NULL, RTAUDIO_FLOAT32, sampleRate, 
-		            &bufferFrames, &additive_gpu, (void*)&freqs );
-    dac.startStream();
-  }
-  catch ( RtAudioError& e ) {
-    e.printMessage();
-    exit( 0 );
-  }
-
-  char input;
-  std::cout << "\nPlaying ... press <enter> to quit.\n";
-  std::cin.get(input);
-
-#elif NOT_SIMPLE
-  float freqs_start[NUM_SINES];
-  float freqs_end[NUM_SINES];
-  float angles[NUM_SINES];
-  float gains[NUM_SINES];
-  float slideTime = END_SECS * 0.75; // SAMPLING_FREQUENCY * END_SECS * 0.75;
-
-  fill_THX(freqs_start, freqs_end, angles, gains, NUM_SINES);
-
-  Additive::initSynth_THX(NUM_SINES, bufferFrames, freqs_start, freqs_end, angles, gains, slideTime);
-
-  try {
-    dac.openStream( &parameters, NULL, RTAUDIO_FLOAT32, sampleRate, 
-		            &bufferFrames, &additive_gpu_complex, (void*)&freqs );
-    dac.startStream();
-  }
-  catch ( RtAudioError& e ) {
-    e.printMessage();
-    exit( 0 );
-  }
-
-  char input;
-  std::cout << "\nPlaying ... press <enter> to quit.\n";
-  std::cin.get(input);
-#elif SINGLE_VOICE
-  v_udata v_user_data;
+// #define SINGLE_VOICE 1
+#ifdef SINGLE_VOICE
 
   // fills in user data with some freq and gains
   for (int i = 1; i <= 16; i++) {
@@ -281,9 +351,6 @@ int main() {
 
 
   Additive::initSimpleSynth(NUM_USER_PARAM, NUM_SAMPLES, user_data.freq, user_data.gain);
-  
-
-
 
   try {
 	  dac.openStream(&parameters, NULL, RTAUDIO_FLOAT32, sampleRate,
@@ -305,17 +372,19 @@ int main() {
 	  // prompt user for input
 	  while (curr_mode == INVALID_MODE) {
 		  char user_in[256];
+		  
 
 		  printf("Enter desired mode : \n", user_in);
 		  scanf("%s", user_in);
 		  fflush(stdin);
 
-		  if (!strcmp(user_in, "quit") || !strcmp(user_in, "Quit"))
+
+		  if (user_quit(user_in))
 		  {
 			  RUNNING = 0;
 			  break;
 		  }
-
+		  
 		  if (strlen(user_in) > 1 || strlen(user_in) == 0) {
 			  printf("invalid mode selected\n");
 			  continue;
@@ -348,7 +417,7 @@ int main() {
 		  scanf("%s", user_in);
 		  fflush(stdin);
 
-		  if (!strcmp(user_in, "quit") || !strcmp(user_in, "Quit"))
+		  if (user_quit(user_in))
 		  {
 			  RUNNING = 0;
 			  break;
@@ -377,7 +446,7 @@ int main() {
 		  scanf("%s", user_in);
 		  fflush(stdin);
 
-		  if (!strcmp(user_in, "quit") || !strcmp(user_in, "Quit"))
+		  if (user_quit(user_in))
 		  {
 			  RUNNING = 0;
 			  break;
@@ -408,9 +477,140 @@ int main() {
 	  print_user_data(user_data);
   }
   
+
 #else
 
-#endif // 
+v_udata v_user_data;
+
+for (int i = 0; i < NUM_VOICES; i++) {
+	v_user_data.v_gains[i] = 1.f;
+
+	for (int j = 0; j < NUM_HARMS; j++) {
+		v_user_data.freqs[i*NUM_HARMS + j] = 0.f;
+
+		if (j == 0 && i == 0) {
+			v_user_data.freqs[i*NUM_HARMS + j] = 220;
+		}
+
+		v_user_data.gains[i*NUM_HARMS + j] = 1.f;
+	}
+}
+
+Additive::initVSynth(NUM_SAMPLES, v_user_data);
+
+try {
+	dac.openStream(&parameters, NULL, RTAUDIO_FLOAT32, sampleRate,
+		&bufferFrames, &voice_callback, (void*)&v_user_data);
+	dac.startStream();
+}
+catch (RtAudioError& e) {
+	e.printMessage();
+	exit(0);
+}
+
+//------ USER I/O ------//
+
+
+int RUNNING = 1;
+enum input_mode { QUIT,
+				  INVALID_MODE,
+				  H_MODE,			// modify harmonic 
+				  V_MODE,			// modify voice gain
+				  S_PRESET_MODE,	// select preset
+				};
+
+while (RUNNING) {
+	input_mode curr_mode = INVALID_MODE;
+	int voice_idx = -1;
+
+	while (voice_idx < 0) {
+		printf("Select a voice (enter a number between 1-%d): ", NUM_VOICES);
+		voice_idx = get_int();
+
+		if (voice_idx < 0) {
+			// quiting
+			RUNNING = 0;
+			break;
+		} else if (voice_idx == 0 || voice_idx > NUM_VOICES) {
+			printf("Invalid voice selected. ");
+			voice_idx = -1;
+		} else {
+			voice_idx--;	// makes sure it zero-indexes
+
+			input_mode mode = INVALID_MODE;
+			while (mode == INVALID_MODE && mode != QUIT) {
+				printf(" | How would like to modify the voice? \n");
+				printf(" |   > L -- to load a voice preset \n");
+				printf(" |   > G -- to modify the amplitude of the voice \n");
+				printf(" |   > H -- to modify a harmonic \n");
+
+
+				char in_c = get_char();
+
+				mode =  in_c == 'q' ? QUIT :
+						in_c == 'L' || in_c == 'l' ? S_PRESET_MODE :
+						in_c == 'G' || in_c == 'g' ? V_MODE :
+						in_c == 'H' || in_c == 'h' ? H_MODE : INVALID_MODE;
+
+				if (mode != QUIT || mode != INVALID_MODE) {
+					if (mode == S_PRESET_MODE) {
+						select_preset(voice_idx, v_user_data);
+					}
+					else if (mode == V_MODE) {
+						modify_voice_gain(voice_idx, v_user_data);
+					}
+					else if (mode == H_MODE) {
+						modify_harmonic(voice_idx, v_user_data);
+					}
+				}
+			}
+
+			if (mode == QUIT) {
+				RUNNING = 0;
+				break;
+			}
+		}
+	}
+}
+
+/* 
+
+USER I/O LAYOUT
+	> VOICE_TO_EDIT
+		> <i> := if 1 < i <= numVoices, set voice to modify to be <i>
+			> HOW_TO_EDIT_VOICE
+				> <l> := LOAD_PRESET
+					> LOAD_PRESET -- PROMPT AVAILABLE PRESETS (1-n)
+						> <i> := if 1 < i <= n, load in preset i; then go to VOICE_TO_EDIT
+						> <other> := re-prompt preset
+
+				> <g> := MODIFY_VOICE_GAIN
+					> VG_VALUE -- PROMPT for VALUE
+						> <i> := set VG to <i>; then go to VOICE_TO_EDIT
+
+
+				> <h> := MODIFY_HARMONICS
+					> HARMONIC_TO_EDIT
+						> <i> := if 1 < i <= numHarmonics, set voice to modify to be <i>
+							> HOW_TO_EDIT_HARMONIC
+								> <f>
+								> <g>
+
+						> <other> := re-prompt HARMONIC_TO_EDIT
+
+
+				> <e> := go to VOICE_TO_EDIT
+				> <other> := re-prompt HOW_TO_EDIT_VOICE
+
+		> <other> := re-prompt VOICE_TO_EDIT
+
+*/
+
+
+
+
+
+#endif 
 
   try {
     // Stop the stream
@@ -425,11 +625,9 @@ int main() {
 
 
 #if SIMPLE
-  Additive::endSynth();
-#elif NOT_SIMPLE
-  Additive::endSynth_THX();
-#else
   Additive::endSimpleSynth();
+#else
+  Additive::endVSynth();
 #endif
 
   return 0;
