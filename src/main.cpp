@@ -119,7 +119,7 @@ char get_char() {
 }
 
 void load_square_wave(int v_idx, v_udata& v_user_data) {
-	float f = 110;
+	float f = 220;
 
 	for (int i = 0; i < NUM_HARMS; i++) {
 		v_user_data.gains[v_idx*NUM_HARMS + i] = 1.f / (1.f + (2*i));
@@ -131,7 +131,7 @@ void load_square_wave(int v_idx, v_udata& v_user_data) {
 }
 
 void load_sawtooth(int v_idx, v_udata& v_user_data) {
-	float f = 110;
+	float f = 220;
 	float L = 1;
 
 	for (int i = 0; i < NUM_HARMS; i++) {
@@ -365,7 +365,6 @@ int main() {
 	  print_user_data(user_data);
   }
   
-
 #else
 
 v_udata v_user_data;
@@ -375,11 +374,6 @@ for (int i = 0; i < NUM_VOICES; i++) {
 
 	for (int j = 0; j < NUM_HARMS; j++) {
 		v_user_data.freqs[i*NUM_HARMS + j] = 0.f;
-
-		if (j == 0 && i == 0) {
-			v_user_data.freqs[i*NUM_HARMS + j] = 220;
-		}
-
 		v_user_data.gains[i*NUM_HARMS + j] = 1.f;
 	}
 }
