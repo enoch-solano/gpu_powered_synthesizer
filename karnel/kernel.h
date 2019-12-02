@@ -10,17 +10,7 @@
 #include <chrono>
 #include <stdexcept>
 
-#define NUM_VOICES 12
-#define NUM_HARMS  12
-
-
-struct v_udata {
-	float freqs[NUM_VOICES * NUM_HARMS];	// contains freqs for every harmonic of every voice
-	float gains[NUM_VOICES * NUM_HARMS];	// contains corresponding gain for every harmonic
-
-	float v_gains[NUM_VOICES];				// gain for overall voice
-};
-
+#include "../src/voice_data.h"
 
 namespace Additive {
 	void initSynth(int numSinusoids, int numSamples, float* host_frequencies);
@@ -41,7 +31,7 @@ namespace Additive {
 	void my_simple_compute(float *buffer, float angle);
 
 
-	void initVSynth(int numSample, const v_udata& v_user_data);
+	void initVSynth(int numSample, const voice_data& v_user_data);
 	void updateFreqsVSynth(float *freqs);
 	void updateGainsVSynth(float *gains);
 	void updateVGainsVSynth(float *v_gains);

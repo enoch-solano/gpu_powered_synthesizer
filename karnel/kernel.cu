@@ -67,7 +67,7 @@ void Additive::my_v_compute(float *buffer, float angle) {
 	cudaMemcpy(buffer, dev_buffer, numSamples * sizeof(float), cudaMemcpyDeviceToHost);
 }
 
-void Additive::initVSynth(int numSample, const v_udata& v_user_data) {
+void Additive::initVSynth(int numSample, const voice_data& v_user_data) {
 	// initializes global variables with appropriate values
 	numSamples = numSample;
 	numSinusoids = NUM_VOICES * NUM_HARMS;
