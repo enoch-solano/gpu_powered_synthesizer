@@ -24,13 +24,6 @@ namespace Additive {
 
 	void compute_sinusoid_hybrid(float* buffer, float* time);
 
-	void initSimpleSynth(int numSinusoid, int numSample, float *init_freqs, float *init_gains);
-	void updateFreqsSimpleSynth(float *freqs);
-	void updateGainsSimpleSynth(float *gains);
-	void endSimpleSynth();
-	void my_simple_compute(float *buffer, float angle);
-
-
 	void initVSynth(int numSample, const voice_data& v_user_data);
 	void updateFreqsVSynth(float *freqs);
 	void updateGainsVSynth(float *gains);
