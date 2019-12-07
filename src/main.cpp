@@ -8,6 +8,9 @@
 #include "voice_data.h"
 #include "user_io_helper.h"
 
+#include <stdio.h>
+#include <windows.h>
+
 static float angle_m = 0;
 
 /*
@@ -73,8 +76,70 @@ int modify_harmonic(int v_idx, voice_data& v_user_data) {
 	return 1;
 }
 
-int main() {
+int play_mode_func(/*voice_data& v_user_data*/) {
+	DWORD        mode;          /* Preserved console mode */
+	INPUT_RECORD event;         /* Input event */
+	BOOL         done = FALSE;  /* Program termination flag */
 
+	/* Get the console input handle */
+	HANDLE hstdin = GetStdHandle(STD_INPUT_HANDLE);
+
+	/* Preserve the original console mode */
+	GetConsoleMode(hstdin, &mode);
+
+	/* Set to no line-buffering, no echo, no special-key-processing */
+	SetConsoleMode(hstdin, 0);
+
+	/* Give the user instructions */
+	printf(
+		"Press any key as many times as you like.\n"
+		"Press Escape to quit.\n\n"
+	);
+
+	int button_was_pressed = 0;
+
+	WORD key_pressed;
+
+	while (!done)
+	{
+		if (WaitForSingleObject(hstdin, 0) == WAIT_OBJECT_0)  /* if kbhit */
+		{
+			DWORD count;  /* ignored */
+
+			/* Get the input event */
+			ReadConsoleInput(hstdin, &event, 1, &count);
+
+
+			/* *first* key press event */
+			if ((event.EventType == KEY_EVENT) && 
+				event.Event.KeyEvent.bKeyDown && 
+				!button_was_pressed) 
+			{
+				printf("Button pressed!\n");
+				button_was_pressed = 1;
+
+				key_pressed = event.Event.KeyEvent.wVirtualKeyCode;
+				done = key_pressed == VK_ESCAPE;
+			}
+
+			/* key release event */
+			if ((event.EventType == KEY_EVENT) && 
+				!event.Event.KeyEvent.bKeyDown && 
+				event.Event.KeyEvent.wVirtualKeyCode == key_pressed) 
+			{
+				printf("Button released!\n");
+				button_was_pressed = 0;
+			}
+		}
+	}
+
+	/* All done! */
+	SetConsoleMode(hstdin, mode);
+
+	return 1;
+}
+
+int main() {
   RtAudio dac;
   if ( dac.getDeviceCount() < 1 ) {
     std::cout << "\nNo audio devices found!\n";
@@ -114,6 +179,8 @@ catch (RtAudioError& e) {
 	exit(0);
 }
 
+play_mode_func();
+
 //------ USER I/O ------//
 
 /*
@@ -136,7 +203,9 @@ enum input_mode { QUIT,
 				  H_MODE,			// modify harmonic 
 				  V_MODE,			// modify voice gain
 				  S_PRESET_MODE,	// select preset
+				  PLAY_MODE
 				};
+
 
 while (RUNNING) {
 	input_mode curr_mode = INVALID_MODE;
