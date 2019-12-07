@@ -14,3 +14,6 @@
 #define Q_KEY 0x51
 
 #define WINDOWS_MACHINE
+
+/* time variable used by sine waves */
+static float angle_m = 0;

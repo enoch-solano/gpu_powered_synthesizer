@@ -15,7 +15,7 @@
 #include <windows.h>
 #endif
 
-static float angle_m = 0;
+#include "ADSR.h"
 
 /*
   callback function called by RtAudio that fills in outputBuffer
