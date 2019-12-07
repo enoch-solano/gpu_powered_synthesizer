@@ -9,3 +9,8 @@
 #define SAMPLING_FREQUENCY 44100
 
 #define NUM_USER_PARAM 16
+
+#define E_KEY 0x45
+#define Q_KEY 0x51
+
+#define WINDOWS_MACHINE

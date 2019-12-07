@@ -15,6 +15,11 @@ int user_quit(char *input) {
 		strcmp(input, "q") == 0;
 }
 
+int user_exit(char *input) {
+	return strcmp(input, "E") == 0 ||
+		strcmp(input, "e") == 0;
+}
+
 /*
   returns the integer typed by the user
 */
@@ -25,6 +30,10 @@ int get_int() {
 
 	if (user_quit(user_in)) {
 		return -1;
+	}
+
+	if (user_exit(user_in)) {
+		return -2;
 	}
 
 	return atoi(user_in);
@@ -40,6 +49,10 @@ char get_char() {
 
 	if (user_quit(user_in)) {
 		return 'q';
+	}
+
+	if (user_exit(user_in)) {
+		return 'e';
 	}
 
 	return user_in[0];

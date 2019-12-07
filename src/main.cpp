@@ -7,9 +7,13 @@
 #include "presets.h"
 #include "voice_data.h"
 #include "user_io_helper.h"
+#include "constants.h"
 
 #include <stdio.h>
+
+#ifdef WINDOWS_MACHINE
 #include <windows.h>
+#endif
 
 static float angle_m = 0;
 
@@ -76,6 +80,7 @@ int modify_harmonic(int v_idx, voice_data& v_user_data) {
 	return 1;
 }
 
+#ifdef WINDOWS_MACHINE
 int play_mode_func(/*voice_data& v_user_data*/) {
 	DWORD        mode;          /* Preserved console mode */
 	INPUT_RECORD event;         /* Input event */
@@ -92,8 +97,9 @@ int play_mode_func(/*voice_data& v_user_data*/) {
 
 	/* Give the user instructions */
 	printf(
+		"\nCurrently in play mode.\n"
 		"Press any key as many times as you like.\n"
-		"Press Escape to quit.\n\n"
+		"Press e to exit and modify a voice.\n\n"
 	);
 
 	int button_was_pressed = 0;
@@ -119,7 +125,7 @@ int play_mode_func(/*voice_data& v_user_data*/) {
 				button_was_pressed = 1;
 
 				key_pressed = event.Event.KeyEvent.wVirtualKeyCode;
-				done = key_pressed == VK_ESCAPE;
+				done = key_pressed == E_KEY;
 			}
 
 			/* key release event */
@@ -135,6 +141,80 @@ int play_mode_func(/*voice_data& v_user_data*/) {
 
 	/* All done! */
 	SetConsoleMode(hstdin, mode);
+
+	return key_pressed != E_KEY;
+}
+#endif
+
+
+enum input_mode {
+	EXIT,
+	QUIT,
+	INVALID,
+	HARMONIC_MOD,		// modify harmonic 
+	VOICE_MOD,			// modify voice gain
+	SEL_PRESET			// select preset
+};
+
+int voice_modification_mode(voice_data& v_user_data) {
+	input_mode curr_mode = INVALID;
+	int voice_idx = -1;
+
+	while (voice_idx < 0) {
+		printf("\nSelect a voice (enter a number between 1-%d): ", NUM_VOICES);
+		voice_idx = get_int();
+
+		if (voice_idx == -1) {
+			// quiting
+			return -1;
+		}
+		else if (voice_idx == -2) {
+			return -2;
+		}
+		else if (voice_idx == 0 || voice_idx > NUM_VOICES) {
+			printf("Invalid voice selected. ");
+			voice_idx = -1;
+		}
+		else {
+			voice_idx--;	// makes sure it zero-indexes
+
+			input_mode mode = INVALID;
+			while (mode == INVALID) {
+				printf(" | How would like to modify the voice? \n");
+				printf(" |   > L -- to load a voice preset \n");
+				printf(" |   > G -- to modify the amplitude of the voice \n");
+				printf(" |   > H -- to modify a harmonic \n");
+
+
+				char in_c = get_char();
+
+				mode = in_c == 'q' ? QUIT :
+					in_c == 'e' ? EXIT :
+					in_c == 'L' || in_c == 'l' ? SEL_PRESET :
+					in_c == 'G' || in_c == 'g' ? VOICE_MOD :
+					in_c == 'H' || in_c == 'h' ? HARMONIC_MOD : INVALID;
+
+				switch (in_c) {
+				case QUIT:
+					return -1;
+				case EXIT:
+					return -2;
+
+				case SEL_PRESET:
+					select_preset(voice_idx, v_user_data);
+					print_harmonics(voice_idx, v_user_data);
+					break;
+				case VOICE_MOD:
+					modify_voice_gain(voice_idx, v_user_data);
+					break;
+				case HARMONIC_MOD:
+					modify_harmonic(voice_idx, v_user_data);
+					print_harmonics(voice_idx, v_user_data);
+					break;
+				}
+			}
+		}
+	}
 
 	return 1;
 }
@@ -154,24 +234,24 @@ int main() {
   unsigned int sampleRate = 44100;
   unsigned int bufferFrames = NUM_SAMPLES; // 256 sample frames
  
-voice_data v_user_data;
+voice_data user_data;
 
 for (int i = 0; i < NUM_VOICES; i++) {
-	v_user_data.v_gains[i] = 1.f;
+	user_data.v_gains[i] = 1.f;
 
 	for (int j = 0; j < NUM_HARMS; j++) {
-		v_user_data.freqs[i*NUM_HARMS + j] = 0.f;
-		v_user_data.gains[i*NUM_HARMS + j] = 1.f;
+		user_data.freqs[i*NUM_HARMS + j] = 0.f;
+		user_data.gains[i*NUM_HARMS + j] = 1.f;
 	}
 }
 
-Additive::initVSynth(NUM_SAMPLES, v_user_data);
+Additive::initVSynth(NUM_SAMPLES, user_data);
 
-print_harmonics(0, v_user_data);
+// print_harmonics(0, user_data);
 
 try {
 	dac.openStream(&parameters, NULL, RTAUDIO_FLOAT32, sampleRate,
-		&bufferFrames, &voice_callback, (void*)&v_user_data);
+		&bufferFrames, &voice_callback, (void*)&user_data);
 	dac.startStream();
 }
 catch (RtAudioError& e) {
@@ -198,68 +278,18 @@ play_mode_func();
 
 
 int RUNNING = 1;
-enum input_mode { QUIT,
-				  INVALID_MODE,
-				  H_MODE,			// modify harmonic 
-				  V_MODE,			// modify voice gain
-				  S_PRESET_MODE,	// select preset
-				  PLAY_MODE
-				};
-
+int USER_MODE = 0;
 
 while (RUNNING) {
-	input_mode curr_mode = INVALID_MODE;
-	int voice_idx = -1;
-
-	while (voice_idx < 0) {
-		printf("Select a voice (enter a number between 1-%d): ", NUM_VOICES);
-		voice_idx = get_int();
-
-		if (voice_idx < 0) {
-			// quiting
-			RUNNING = 0;
-			break;
-		} else if (voice_idx == 0 || voice_idx > NUM_VOICES) {
-			printf("Invalid voice selected. ");
-			voice_idx = -1;
-		} else {
-			voice_idx--;	// makes sure it zero-indexes
-
-			input_mode mode = INVALID_MODE;
-			while (mode == INVALID_MODE && mode != QUIT) {
-				printf(" | How would like to modify the voice? \n");
-				printf(" |   > L -- to load a voice preset \n");
-				printf(" |   > G -- to modify the amplitude of the voice \n");
-				printf(" |   > H -- to modify a harmonic \n");
-
-
-				char in_c = get_char();
-
-				mode =  in_c == 'q' ? QUIT :
-						in_c == 'L' || in_c == 'l' ? S_PRESET_MODE :
-						in_c == 'G' || in_c == 'g' ? V_MODE :
-						in_c == 'H' || in_c == 'h' ? H_MODE : INVALID_MODE;
-
-				if (mode != QUIT || mode != INVALID_MODE) {
-					if (mode == S_PRESET_MODE) {
-						select_preset(voice_idx, v_user_data);
-						print_harmonics(voice_idx, v_user_data);
-					}
-					else if (mode == V_MODE) {
-						modify_voice_gain(voice_idx, v_user_data);
-					}
-					else if (mode == H_MODE) {
-						modify_harmonic(voice_idx, v_user_data);
-						print_harmonics(voice_idx, v_user_data);
-					}
-				}
-			}
-
-			if (mode == QUIT) {
-				RUNNING = 0;
-				break;
-			}
-		}
+	switch (USER_MODE) {
+	case 0:
+		RUNNING = -1 != voice_modification_mode(user_data);
+		USER_MODE = 1;
+		break;
+	case 1:
+		play_mode_func();
+		USER_MODE = 0;
+		break;
 	}
 }
 
