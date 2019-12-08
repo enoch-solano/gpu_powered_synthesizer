@@ -37,6 +37,8 @@ cuda_add_executable(${CMAKE_PROJECT_NAME}
     "src/testing_helpers.hpp"
    "src/RtAudio.cpp"
       	"src/RtAudio.h"
+   "src/ADSR.cpp"
+        "src/ADSR.h"
 	"src/Sine.h"
     )
 

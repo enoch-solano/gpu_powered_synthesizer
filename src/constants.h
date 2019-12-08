@@ -13,6 +13,9 @@
 #define E_KEY 0x45
 #define Q_KEY 0x51
 
+#define ON_G 1
+#define OFF_G 0
+
 #define WINDOWS_MACHINE
 
 /* time variable used by sine waves */

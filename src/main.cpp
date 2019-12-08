@@ -15,7 +15,6 @@
 #include <windows.h>
 #endif
 
-#include "ADSR.h"
 
 /*
   callback function called by RtAudio that fills in outputBuffer
@@ -28,6 +27,9 @@ int voice_callback(void *outputBuffer, void* inputBuffer, unsigned int nBufferFr
 
 	// gets buffer data from GPU
 	Additive::my_v_compute((float*)outputBuffer, angle_m);
+
+	// applies ADSR
+	((voice_data*)userData)->adsr->batch_process(NUM_SAMPLES, (float*)outputBuffer);
 
 	// increments angle (i.e. time) 
 	angle_m += 2.0f * _PI * NUM_SAMPLES / 44100.f;
@@ -81,7 +83,7 @@ int modify_harmonic(int v_idx, voice_data& v_user_data) {
 }
 
 #ifdef WINDOWS_MACHINE
-int play_mode_func(/*voice_data& v_user_data*/) {
+int play_mode_func(voice_data& v_user_data) {
 	DWORD        mode;          /* Preserved console mode */
 	INPUT_RECORD event;         /* Input event */
 	BOOL         done = FALSE;  /* Program termination flag */
@@ -124,6 +126,8 @@ int play_mode_func(/*voice_data& v_user_data*/) {
 				printf("Button pressed!\n");
 				button_was_pressed = 1;
 
+				v_user_data.adsr->gate(ON_G);
+
 				key_pressed = event.Event.KeyEvent.wVirtualKeyCode;
 				done = key_pressed == E_KEY;
 			}
@@ -135,9 +139,13 @@ int play_mode_func(/*voice_data& v_user_data*/) {
 			{
 				printf("Button released!\n");
 				button_was_pressed = 0;
+
+				v_user_data.adsr->gate(OFF_G);
 			}
 		}
 	}
+
+	v_user_data.adsr->gate(OFF_G);
 
 	/* All done! */
 	SetConsoleMode(hstdin, mode);
@@ -194,7 +202,7 @@ int voice_modification_mode(voice_data& v_user_data) {
 					in_c == 'G' || in_c == 'g' ? VOICE_MOD :
 					in_c == 'H' || in_c == 'h' ? HARMONIC_MOD : INVALID;
 
-				switch (in_c) {
+				switch (mode) {
 				case QUIT:
 					return -1;
 				case EXIT:
@@ -231,7 +239,7 @@ int main() {
   parameters.nChannels = 1;
   parameters.firstChannel = 0;
 
-  unsigned int sampleRate = 44100;
+  unsigned int sampleRate = SAMPLING_FREQUENCY;
   unsigned int bufferFrames = NUM_SAMPLES; // 256 sample frames
  
 voice_data user_data;
@@ -244,6 +252,16 @@ for (int i = 0; i < NUM_VOICES; i++) {
 		user_data.gains[i*NUM_HARMS + j] = 1.f;
 	}
 }
+
+ADSR adsr;
+
+// initialize adsr settings
+adsr.setAttackRate(.1 * SAMPLING_FREQUENCY);	// .1 seconds
+adsr.setDecayRate(.3 * SAMPLING_FREQUENCY);		// .3 seconds
+adsr.setReleaseRate(5 * SAMPLING_FREQUENCY);	// 5 seconds
+adsr.setSustainLevel(.8);
+
+user_data.adsr = &adsr;
 
 Additive::initVSynth(NUM_SAMPLES, user_data);
 
@@ -258,8 +276,6 @@ catch (RtAudioError& e) {
 	e.printMessage();
 	exit(0);
 }
-
-play_mode_func();
 
 //------ USER I/O ------//
 
@@ -287,7 +303,7 @@ while (RUNNING) {
 		USER_MODE = 1;
 		break;
 	case 1:
-		play_mode_func();
+		play_mode_func(user_data);
 		USER_MODE = 0;
 		break;
 	}
