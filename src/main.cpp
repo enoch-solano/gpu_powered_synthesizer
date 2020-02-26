@@ -2,20 +2,20 @@
 #include "kernel.h"
 #include <iostream>
 #include <cstdlib>
-#include "Sine.h"
-
 #include "presets.h"
 #include "voice_data.h"
 #include "user_io_helper.h"
 #include "constants.h"
-
+#include "engine.h"
 #include <stdio.h>
 
-#ifdef WINDOWS_MACHINE
-#include <windows.h>
-#endif
 
 
+
+bool run = false;
+Engine* synth = NULL;
+int a = 0;
+int num = 0;
 /*
   callback function called by RtAudio that fills in outputBuffer
 */
@@ -26,14 +26,19 @@ int voice_callback(void *outputBuffer, void* inputBuffer, unsigned int nBufferFr
 	if (status) std::cout << "Stream underflow detected!" << std::endl;
 
 	// gets buffer data from GPU
-	Additive::my_v_compute((float*)outputBuffer, angle_m);
+	 if(run){
+	 synth->simple_tick(outputBuffer);
+	// 	for (int i =0 ; i < 256; i++){
+	// 	float* buff = (float*)outputBuffer;
+	// 	std::cout << num++ <<" " << buff[i] << std::endl;
+	// }a++;
+	 }
 
-	// applies ADSR
-	((voice_data*)userData)->adsr->batch_process(NUM_SAMPLES, (float*)outputBuffer);
 
-	// increments angle (i.e. time) 
-	angle_m += 2.0f * _PI * NUM_SAMPLES / 44100.f;
-	angle_m = fmod(angle_m, 44100.f);
+	// if (a ==5){
+	// 	exit(0);
+	// }
+
 
 	return 0;
 }
@@ -41,11 +46,11 @@ int voice_callback(void *outputBuffer, void* inputBuffer, unsigned int nBufferFr
 /*
   updates voice gains in the GPU
 */
-int modify_voice_gain(int v_idx, voice_data& v_user_data) {
+int modify_voice_gain(int v_idx, Engine*engine) {
 	printf(" | | Enter the value to update the amplitude of the voice: ");
-	v_user_data.v_gains[v_idx] = get_int();
+	float gain = get_int();
 
-	Additive::updateVGainsVSynth(v_user_data.v_gains);
+	engine->update_voice_gain(v_idx, gain);
 
 	return 1;
 }
@@ -54,7 +59,7 @@ int modify_voice_gain(int v_idx, voice_data& v_user_data) {
 /*
   updates harmonic gains and freqs in the GPU
 */
-int modify_harmonic(int v_idx, voice_data& v_user_data) {
+int modify_harmonic(int v_idx,Engine*engine) {
 	int h_idx = -1;
 	printf(" | | Select a harmonic (enter a number between 1-%d): ", NUM_HARMS);
 	while (h_idx < 0) {
@@ -70,89 +75,12 @@ int modify_harmonic(int v_idx, voice_data& v_user_data) {
 	h_idx--;	// makes sure it's zero indexed
 
 	printf(" | | | Enter the value to update the amplitude of the harmonic: ");
-	v_user_data.gains[v_idx*NUM_HARMS + h_idx] = get_int();
-
-	printf(" | | | Enter the value to update the frequency of the harmonic: ");
-	v_user_data.freqs[v_idx*NUM_HARMS + h_idx] = get_int();
-	printf("\n");
-
-	Additive::updateFreqsVSynth(v_user_data.freqs);
-	Additive::updateGainsVSynth(v_user_data.gains);
+	float gain = get_float();
+    engine->update_harmonics(v_idx, h_idx, gain);
 
 	return 1;
 }
 
-#ifdef WINDOWS_MACHINE
-int play_mode_func(voice_data& v_user_data) {
-	DWORD        mode;          /* Preserved console mode */
-	INPUT_RECORD event;         /* Input event */
-	BOOL         done = FALSE;  /* Program termination flag */
-
-	/* Get the console input handle */
-	HANDLE hstdin = GetStdHandle(STD_INPUT_HANDLE);
-
-	/* Preserve the original console mode */
-	GetConsoleMode(hstdin, &mode);
-
-	/* Set to no line-buffering, no echo, no special-key-processing */
-	SetConsoleMode(hstdin, 0);
-
-	/* Give the user instructions */
-	printf(
-		"\nCurrently in play mode.\n"
-		"Press any key as many times as you like.\n"
-		"Press e to exit and modify a voice.\n\n"
-	);
-
-	int button_was_pressed = 0;
-
-	WORD key_pressed;
-
-	while (!done)
-	{
-		if (WaitForSingleObject(hstdin, 0) == WAIT_OBJECT_0)  /* if kbhit */
-		{
-			DWORD count;  /* ignored */
-
-			/* Get the input event */
-			ReadConsoleInput(hstdin, &event, 1, &count);
-
-
-			/* *first* key press event */
-			if ((event.EventType == KEY_EVENT) && 
-				event.Event.KeyEvent.bKeyDown && 
-				!button_was_pressed) 
-			{
-				printf("Button pressed!\n");
-				button_was_pressed = 1;
-
-				v_user_data.adsr->gate(ON_G);
-
-				key_pressed = event.Event.KeyEvent.wVirtualKeyCode;
-				done = key_pressed == E_KEY;
-			}
-
-			/* key release event */
-			if ((event.EventType == KEY_EVENT) && 
-				!event.Event.KeyEvent.bKeyDown && 
-				event.Event.KeyEvent.wVirtualKeyCode == key_pressed) 
-			{
-				printf("Button released!\n");
-				button_was_pressed = 0;
-
-				v_user_data.adsr->gate(OFF_G);
-			}
-		}
-	}
-
-	v_user_data.adsr->gate(OFF_G);
-
-	/* All done! */
-	SetConsoleMode(hstdin, mode);
-
-	return key_pressed != E_KEY;
-}
-#endif
 
 
 enum input_mode {
@@ -164,14 +92,14 @@ enum input_mode {
 	SEL_PRESET			// select preset
 };
 
-int voice_modification_mode(voice_data& v_user_data) {
+int voice_modification_mode(Engine*engine) {
 	input_mode curr_mode = INVALID;
 	int voice_idx = -1;
 
 	while (voice_idx < 0) {
 		printf("\nSelect a voice (enter a number between 1-%d): ", NUM_VOICES);
 		voice_idx = get_int();
-
+   
 		if (voice_idx == -1) {
 			// quiting
 			return -1;
@@ -209,15 +137,16 @@ int voice_modification_mode(voice_data& v_user_data) {
 					return -2;
 
 				case SEL_PRESET:
-					select_preset(voice_idx, v_user_data);
-					print_harmonics(voice_idx, v_user_data);
+					select_preset(voice_idx, engine);
+					print_harmonics(voice_idx, engine);
+					run = true;
 					break;
 				case VOICE_MOD:
-					modify_voice_gain(voice_idx, v_user_data);
+					modify_voice_gain(voice_idx, engine);
 					break;
 				case HARMONIC_MOD:
-					modify_harmonic(voice_idx, v_user_data);
-					print_harmonics(voice_idx, v_user_data);
+					modify_harmonic(voice_idx, engine);
+					print_harmonics(voice_idx, engine);
 					break;
 				}
 			}
@@ -228,100 +157,84 @@ int voice_modification_mode(voice_data& v_user_data) {
 }
 
 int main() {
-  RtAudio dac;
-  if ( dac.getDeviceCount() < 1 ) {
-    std::cout << "\nNo audio devices found!\n";
-    exit( 0 );
-  }
+     RtAudio dac;
+     if ( dac.getDeviceCount() < 1 ) {
+         std::cout << "\nNo audio devices found!\n";
+         exit( 0 );
+     }
 
-  RtAudio::StreamParameters parameters;
-  parameters.deviceId = dac.getDefaultOutputDevice();
-  parameters.nChannels = 1;
-  parameters.firstChannel = 0;
+     RtAudio::StreamParameters parameters;
+     parameters.deviceId = 0;//dac.getDefaultOutputDevice();
+     parameters.nChannels = 1;
 
-  unsigned int sampleRate = SAMPLING_FREQUENCY;
-  unsigned int bufferFrames = NUM_SAMPLES; // 256 sample frames
- 
-voice_data user_data;
+     unsigned int sampleRate = SAMPLING_FREQUENCY;
+     unsigned int bufferFrames = NUM_SAMPLES; // 256 sample frames
 
-for (int i = 0; i < NUM_VOICES; i++) {
-	user_data.v_gains[i] = 1.f;
-
-	for (int j = 0; j < NUM_HARMS; j++) {
-		user_data.freqs[i*NUM_HARMS + j] = 0.f;
-		user_data.gains[i*NUM_HARMS + j] = 1.f;
-	}
-}
-
-ADSR adsr;
-
-// initialize adsr settings
-adsr.setAttackRate(.1 * SAMPLING_FREQUENCY);	// .1 seconds
-adsr.setDecayRate(.3 * SAMPLING_FREQUENCY);		// .3 seconds
-adsr.setReleaseRate(5 * SAMPLING_FREQUENCY);	// 5 seconds
-adsr.setSustainLevel(.8);
-
-user_data.adsr = &adsr;
-
-Additive::initVSynth(NUM_SAMPLES, user_data);
-
-// print_harmonics(0, user_data);
-
-try {
-	dac.openStream(&parameters, NULL, RTAUDIO_FLOAT32, sampleRate,
-		&bufferFrames, &voice_callback, (void*)&user_data);
-	dac.startStream();
-}
-catch (RtAudioError& e) {
-	e.printMessage();
-	exit(0);
-}
-
-//------ USER I/O ------//
-
-/*
-	button to cycle through options (in voice harmonics)
-	> voice gain modification	-- detected by which knob you're turning
-	> load a preset			-- select voice by turning knob (wait until it stops?)
-		> select preset through a button cycle
-	> modify harmonics
-
-	button to cycle through options (in harmonics modification)
-	> harm gain modification
-	> harm freq modification
-	> double click to exit
-*/
+    for (unsigned int i = 0; i < dac.getDeviceCount(); i++){
+			RtAudio::DeviceInfo info = dac.getDeviceInfo(i);
+			if(info.probed == true) std::cout<<"device"<<i<<" = " << info.name <<std::endl;
+		}
 
 
-int RUNNING = 1;
-int USER_MODE = 0;
+     synth = Engine::getInstance();
 
-while (RUNNING) {
-	switch (USER_MODE) {
-	case 0:
-		RUNNING = -1 != voice_modification_mode(user_data);
-		USER_MODE = 1;
-		break;
-	case 1:
-		play_mode_func(user_data);
-		USER_MODE = 0;
-		break;
-	}
-}
+     // print_harmonics(0, user_data);
 
-  try {
-    // Stop the stream
-    dac.stopStream();
-  } catch (RtAudioError& e) {
-    e.printMessage();
-  }
+     try {
+	      dac.openStream(&parameters, NULL, RTAUDIO_FLOAT32, sampleRate,
+	    	&bufferFrames, &voice_callback);
+	      dac.startStream();
+     }
+     catch (RtAudioError& e) {
+	      e.printMessage();
+	      exit(0);
+     }
 
-  if (dac.isStreamOpen()) {
-	  dac.closeStream();
-  }
+	//------ USER I/O ------//
+
+	/*
+		button to cycle through options (in voice harmonics)
+		> voice gain modification	-- detected by which knob you're turning
+		> load a preset			-- select voice by turning knob (wait until it stops?)
+			> select preset through a button cycle
+		> modify harmonics
+
+		button to cycle through options (in harmonics modification)
+		> harm gain modification
+		> harm freq modification
+		> double click to exit
+	*/
 
 
-  Additive::endVSynth();
+     int RUNNING = 1;
+     int USER_MODE = 0;
 
-  return 0;
+     while (RUNNING) {
+	     switch (USER_MODE) {
+	     case 0:
+		     RUNNING = -1 != voice_modification_mode(synth);
+		     USER_MODE = 1;
+		     break;
+	     case 1:
+		     
+		     USER_MODE = 0;
+		     break;
+	     } 
+     }
+
+     try {
+         // Stop the stream
+         dac.stopStream();
+     } catch (RtAudioError& e) {
+         e.printMessage();
+     }
+
+     if (dac.isStreamOpen()) {
+	     dac.closeStream();
+     }
+
+
+
+
+    return 0;
 }

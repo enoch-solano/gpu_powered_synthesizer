@@ -12,22 +12,11 @@
 
 #include "../src/voice_data.h"
 
+
 namespace Additive {
 	void initSynth(int numSinusoids, int numSamples, float* host_frequencies);
 	void endSynth();
-
     void compute_sinusoid_gpu_simple(float * buffer, float angle);
-
-	void initSynth_THX(int numSinusoid, int numSample, float* host_start_freq, float* host_end_freq,
-					   float* host_angle, float*  host_gains, float slide);
-	void endSynth_THX();
-
-	void compute_sinusoid_hybrid(float* buffer, float* time);
-
-	void initVSynth(int numSample, const voice_data& v_user_data);
-	void updateFreqsVSynth(float *freqs);
-	void updateGainsVSynth(float *gains);
-	void updateVGainsVSynth(float *v_gains);
-	void endVSynth();
-	void my_v_compute(float *buffer, float angle);
+    void my_v_compute(float *buffer, float angle, float* h_buffer, float* h_v_gains, float2* h_freq_gains, int numSamples, int numSinusoids, int numVoices);
+    void compute_sinusoid_hybrid(float* samples, float2* h_freq_gains, float* h_angles, float *h_v_gains, float* h_tmp_buffer, float* h_buffer, int numSinusoids, float time, float numSamples);
 }

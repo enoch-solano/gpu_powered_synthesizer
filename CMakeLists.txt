@@ -29,26 +29,30 @@ include_directories(karnel)
 cuda_add_library(kernel
 "karnel/kernel.cu"
 	"karnel/kernel.h"
-	OPTIONS -arch=sm_50
+	OPTIONS -arch=sm_53
 	)
 
 cuda_add_executable(${CMAKE_PROJECT_NAME}
     	"src/main.cpp"
-    "src/testing_helpers.hpp"
-   "src/RtAudio.cpp"
+        "src/testing_helpers.hpp"
+        "src/RtAudio.cpp"
       	"src/RtAudio.h"
-   "src/ADSR.cpp"
+        "src/ADSR.cpp"
         "src/ADSR.h"
-	"src/Sine.h"
+        "src/engine.h"
+        "src/engine.cpp"
     )
-
+SET(GCC_COVERAGE_LINK_FLAGS "-lasound")
+find_package(ALSA REQUIRED)
+include_directories(${ALSA_INCLUDE_DIRS})
 if(WIN32)
     # Set up include and lib paths
     set(CUDA_HOST_COMPILER ${CMAKE_CXX_COMPILER} CACHE FILEPATH "Host side compiler used by NVCC" FORCE)
 endif(WIN32)
-
+link_directories(${CUDA_TOOLKIT_ROOT_DIR}/lib64)
 #"C:/Program Files (x86)/RtAudio/lib/rtaudio.lib"
 target_link_libraries(${CMAKE_PROJECT_NAME}
     kernel
     ${CORELIBS}
+    ${ALSA_LIBRARIES}
     )

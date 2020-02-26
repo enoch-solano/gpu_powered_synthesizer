@@ -3,7 +3,7 @@
 #include <iostream>
 #include <cstdlib>
 
-#include "voice_data.h"
+#include "engine.h"
 
 /*
   returns whether or not user input is quitting
@@ -25,7 +25,9 @@ int user_exit(char *input) {
 */
 int get_int() {
 	char user_in[256];
+
 	scanf("%s", user_in);
+
 	fflush(stdin);
 
 	if (user_quit(user_in)) {
@@ -37,6 +39,25 @@ int get_int() {
 	}
 
 	return atoi(user_in);
+}
+
+/*
+  returns the integer typed by the user
+*/
+float get_float() {
+	char user_in[256];
+	scanf("%s", user_in);
+	fflush(stdin);
+
+	if (user_quit(user_in)) {
+		return -1;
+	}
+
+	if (user_exit(user_in)) {
+		return -2;
+	}
+
+	return atof(user_in);
 }
 
 /*
@@ -61,10 +82,12 @@ char get_char() {
 /*
   prompts the user to select a preset and fulfills said command
 */
-int select_preset(int v_idx, voice_data& v_user_data) {
+int select_preset(int v_idx, Engine *synth) {
 	printf(" | | Select a preset: \n");
 	printf(" | |   > 1 -- square wave \n");
 	printf(" | |   > 2 -- sawtooth wave \n");
+	printf(" | |   > 3 -- sine wave \n");
+
 
 	int preset = 0;
 
@@ -73,10 +96,13 @@ int select_preset(int v_idx, voice_data& v_user_data) {
 
 		switch (preset) {
 		case 1:
-			load_square_wave(v_idx, v_user_data);
+			synth->load_square_wave(v_idx, 200);
 			break;
 		case 2:
-			load_sawtooth(v_idx, v_user_data);
+			synth->load_sawtooth(v_idx, 200);
+			break;
+		case 3: 
+			synth->load_sinewave(v_idx, 440);
 			break;
 		default:
 			preset = 0;
@@ -90,21 +116,21 @@ int select_preset(int v_idx, voice_data& v_user_data) {
 /*
   prints the harmonics of a voice
 */
-void print_harmonics(int v_idx, const voice_data &data) {
+void print_harmonics(int v_idx, Engine *synth) {
 	printf("\nThe harmonics of voice (%d):\n", v_idx + 1);
 
 	printf("freq: ");
 	for (int i = 0; i < NUM_HARMS - 1; i++) {
-		printf("%.1f,\t", data.freqs[v_idx*NUM_HARMS + i]);
+		printf("%.1f,\t", synth->get_freq(v_idx, i));
 	}
 
-	printf("%.1f\n", data.freqs[v_idx*NUM_HARMS + NUM_HARMS - 1]);
+	printf("%.1f\n", synth->get_freq(v_idx, NUM_HARMS - 1));
 
 
 	printf("amps: ");
 	for (int i = 0; i < NUM_HARMS - 1; i++) {
-		printf("%.1f,\t", data.gains[v_idx*NUM_HARMS + i]);
+		printf("%.1f,\t", synth->get_gain(v_idx, i));
 	}
 
-	printf("%.1f\n\n", data.gains[v_idx*NUM_HARMS + NUM_HARMS - 1]);
+	printf("%.1f\n\n", synth->get_gain(v_idx, NUM_HARMS -1));
 }
