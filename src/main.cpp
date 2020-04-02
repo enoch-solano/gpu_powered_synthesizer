@@ -9,13 +9,22 @@
 #include "engine.h"
 #include <stdio.h>
 
+// needed for sockets
+#include <stdio.h>
+#include <unistd.h>
+#include <sys/socket.h>
+#include <sys/un.h>
+#include <stdlib.h>
+#include <string>
 
+#define MAX_BUF_LEN 256
 
 
 bool run = false;
 Engine* synth = NULL;
 int a = 0;
 int num = 0;
+
 /*
   callback function called by RtAudio that fills in outputBuffer
 */
@@ -26,19 +35,17 @@ int voice_callback(void *outputBuffer, void* inputBuffer, unsigned int nBufferFr
 	if (status) std::cout << "Stream underflow detected!" << std::endl;
 
 	// gets buffer data from GPU
-	 if(run){
-	 synth->simple_tick(outputBuffer);
-	// 	for (int i =0 ; i < 256; i++){
-	// 	float* buff = (float*)outputBuffer;
-	// 	std::cout << num++ <<" " << buff[i] << std::endl;
-	// }a++;
-	 }
-
+	if (run){
+		synth->simple_tick(outputBuffer);
+		// 	for (int i =0 ; i < 256; i++){
+		// 	float* buff = (float*)outputBuffer;
+		// 	std::cout << num++ <<" " << buff[i] << std::endl;
+		// }a++;
+	}
 
 	// if (a ==5){
 	// 	exit(0);
 	// }
-
 
 	return 0;
 }
@@ -48,18 +55,17 @@ int voice_callback(void *outputBuffer, void* inputBuffer, unsigned int nBufferFr
 */
 int modify_voice_gain(int v_idx, Engine*engine) {
 	printf(" | | Enter the value to update the amplitude of the voice: ");
-	float gain = get_int();
+	float gain = get_float();
 
 	engine->update_voice_gain(v_idx, gain);
 
 	return 1;
 }
 
-
 /*
   updates harmonic gains and freqs in the GPU
 */
-int modify_harmonic(int v_idx,Engine*engine) {
+int modify_harmonic(int v_idx, Engine*engine) {
 	int h_idx = -1;
 	printf(" | | Select a harmonic (enter a number between 1-%d): ", NUM_HARMS);
 	while (h_idx < 0) {
@@ -156,6 +162,38 @@ int voice_modification_mode(Engine*engine) {
 	return 1;
 }
 
+#define BUFF_QTSOCK_OFFSET 4 /*offset for qt reading in*/
+
+// Function designed for chat between client and server. 
+void connect_with_client(int sockfd) 
+{ 
+    char buff[MAX_BUF_LEN]; 
+    // infinite loop for chat 
+    while (1) { 
+		// send server message to client 
+        char *msg = "thanks!\n";
+		write(sockfd, msg, sizeof(msg));
+
+		bzero(buff, MAX_BUF_LEN); 
+  
+        // read the message from client and copy it in buffer  
+        read(sockfd, buff, sizeof(buff)); 
+
+		// print buffer which contains the client contents 
+        printf("From client: %s\t To client : %s", buff + BUFF_QTSOCK_OFFSET, msg); 
+
+
+		
+        // if msg contains "Exit" then server exit and chat ended. 
+        if (strncmp("exit", buff, 4) == 0) { 
+            printf("Server Exit...\n"); 
+            break; 
+        } 
+
+		voice_modification_mode(synth);
+    } 
+} 
+
 int main() {
      RtAudio dac;
      if ( dac.getDeviceCount() < 1 ) {
@@ -171,9 +209,9 @@ int main() {
      unsigned int bufferFrames = NUM_SAMPLES; // 256 sample frames
 
     for (unsigned int i = 0; i < dac.getDeviceCount(); i++){
-			RtAudio::DeviceInfo info = dac.getDeviceInfo(i);
-			if(info.probed == true) std::cout<<"device"<<i<<" = " << info.name <<std::endl;
-		}
+		RtAudio::DeviceInfo info = dac.getDeviceInfo(i);
+		if(info.probed == true) std::cout<<"device"<<i<<" = " << info.name <<std::endl;
+	}
 
 
      synth = Engine::getInstance();
@@ -206,21 +244,64 @@ int main() {
 	*/
 
 
-     int RUNNING = 1;
-     int USER_MODE = 0;
+    int RUNNING = 1;
+    int USER_MODE = 0;
 
-     while (RUNNING) {
-	     switch (USER_MODE) {
-	     case 0:
-		     RUNNING = -1 != voice_modification_mode(synth);
-		     USER_MODE = 1;
-		     break;
-	     case 1:
+	
+
+	// set up code for socket
+	char *socket_path = "/tmp/socket_for_synth_eng";
+
+	struct sockaddr_un addr;
+	int sockfd, connfd;
+
+	// get file descriptor of socket
+	if ( (sockfd = socket(AF_UNIX, SOCK_STREAM, 0)) == -1) {
+		perror("socket error");
+		exit(-1);
+	}
+
+	memset(&addr, 0, sizeof(addr));
+	addr.sun_family = AF_UNIX;
+	strncpy(addr.sun_path, socket_path, sizeof(addr.sun_path)-1);
+	unlink(socket_path);
+
+	if (bind(sockfd, (struct sockaddr*)&addr, sizeof(addr)) == -1) {
+		perror("bind error");
+		exit(-1);
+	}
+
+	if (listen(sockfd, 5) == -1) {
+		perror("listen error");
+		exit(-1);
+	}
+
+
+	while (1) {
+		if ( (connfd = accept(sockfd, NULL, NULL)) == -1) {
+			perror("accept error");
+			continue;
+		} 
+
+		// Function for chatting between client and server 
+		connect_with_client(connfd); 
+	}
+	
+	// After chatting close the socket 
+	close(sockfd);
+
+    // while (RUNNING) {
+	//      switch (USER_MODE) {
+	//      case 0:
+	// 	     RUNNING = -1 != voice_modification_mode(synth);
+	// 	     USER_MODE = 1;
+	// 	     break;
+	//      case 1:
 		     
-		     USER_MODE = 0;
-		     break;
-	     } 
-     }
+	// 	     USER_MODE = 0;
+	// 	     break;
+	//      } 
+    // }
 
      try {
          // Stop the stream

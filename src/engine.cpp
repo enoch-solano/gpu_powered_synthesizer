@@ -6,20 +6,21 @@ Engine* Engine::engine = NULL;
 * Check for CUDA errors; print and exit if there was a problem.
 */
 void checkCUDAError_(const char *msg, int line = -1) {
-  cudaError_t err = cudaGetLastError();
-  if (cudaSuccess != err) {
-    if (line >= 0) {
-      fprintf(stderr, "Line %d: ", line);
-    }
-    fprintf(stderr, "Cuda error: %s: %s.\n", msg, cudaGetErrorString(err));
-    exit(EXIT_FAILURE);
-  }
+     cudaError_t err = cudaGetLastError();
+     
+     if (cudaSuccess != err) {
+          if (line >= 0) {
+               fprintf(stderr, "Line %d: ", line);
+          }
+
+          fprintf(stderr, "Cuda error: %s: %s.\n", msg, cudaGetErrorString(err));
+          exit(EXIT_FAILURE);
+     }
 }
 	 
 
 
-Engine::Engine() { 
-          
+Engine::Engine() {
           adsr = new ADSR();
           
           // initialize adsr settings
@@ -27,6 +28,7 @@ Engine::Engine() {
           adsr->setDecayRate(.3 * SAMPLING_FREQUENCY);	// .3 seconds
           adsr->setReleaseRate(5 * SAMPLING_FREQUENCY);	// 5 seconds
           adsr->setSustainLevel(.8);
+
           num_voices = NUM_VOICES;
           num_harms = NUM_HARMS;
           num_sinusoids = NUM_HARMS * NUM_VOICES;
@@ -47,9 +49,10 @@ Engine::Engine() {
           for(int i = 0; i < num_voices; i++){
                h_v_gains[i]  = 1.0;
           }
-         }      
+     }
+
 Engine* Engine::getInstance(){
-     if(!engine) engine = new Engine();
+     if (!engine) engine = new Engine();
      return engine;
 }
 
@@ -58,7 +61,6 @@ void Engine::process_adsr(void* outputBuffer){
 }
 
 void Engine::load_sawtooth(int v_idx, int f) {
-
      float L = 1;
 
      for (int i = 0; i < NUM_HARMS; i++) {
@@ -67,21 +69,16 @@ void Engine::load_sawtooth(int v_idx, int f) {
      }
 }
 void Engine::load_square_wave(int v_idx, int f) {
-    
-
      for (int i = 0; i < NUM_HARMS; i++) {
-          h_freq_gains[v_idx*NUM_HARMS + i].y = 1.f / (1.f + (2 * i)); //gain
-          h_freq_gains[v_idx*NUM_HARMS + i].x = (1.f + (2 * i)) * f;   //freq
+          h_freq_gains[v_idx*NUM_HARMS + i].y = 1.f / (1.f + (2 * i)); // gain
+          h_freq_gains[v_idx*NUM_HARMS + i].x = (1.f + (2 * i)) * f;   // freq
           freq_ratios[v_idx*NUM_HARMS +i] = (1 + (2 * i));
      }
 }
 
 void Engine::load_sinewave(int v_idx, int f) {
-    
-
-     
-          h_freq_gains[v_idx*NUM_HARMS].y = 1.0; //gain
-          h_freq_gains[v_idx*NUM_HARMS].x = f;   //freq
+          h_freq_gains[v_idx*NUM_HARMS].y = 1; // gain
+          h_freq_gains[v_idx*NUM_HARMS].x = f;   // freq
      
 }
 void Engine::update_freqs(){
@@ -92,6 +89,7 @@ void Engine::update_freqs(){
      }
              
 }
+
 void Engine::update_voice_gain(int v_idx, float gain){
      h_v_gains[v_idx] = gain;
 }
@@ -110,11 +108,12 @@ float Engine::get_gain(int v_idx, int harmonic){
         
 void Engine::gate_on(){
      adsr->gate(ON_G);
-}        
+}
 
 void Engine::gate_off(){
      adsr->gate(OFF_G);
 }
+
 void Engine::tick(void* outputBuffer){
      //Additive::update_freqs(freq_gains, freq_ratios, num_voices, num_harms, fundamental_freqs)
      Additive::compute_sinusoid_hybrid((float*)outputBuffer, h_freq_gains, h_angles, h_v_gains, h_tmp_buffer, h_buffer,num_sinusoids, time, num_samples);
