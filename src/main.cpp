@@ -9,15 +9,17 @@
 #include "engine.h"
 #include <stdio.h>
 
-// needed for sockets
+//---needed for sockets---//
 #include <stdio.h>
 #include <unistd.h>
 #include <sys/socket.h>
 #include <sys/un.h>
 #include <stdlib.h>
 #include <string>
+//------------------------//
 
-#define MAX_BUF_LEN 256
+#include "single_include/nlohmann/json.hpp"
+using JSON = nlohmann::json;
 
 
 bool run = false;
@@ -163,34 +165,43 @@ int voice_modification_mode(Engine*engine) {
 }
 
 #define BUFF_QTSOCK_OFFSET 4 /*offset for qt reading in*/
+#define MAX_BUF_LEN 1024
 
 // Function designed for chat between client and server. 
-void connect_with_client(int sockfd) 
+void connect_with_qt(int sockfd) 
 { 
     char buff[MAX_BUF_LEN]; 
     // infinite loop for chat 
     while (1) { 
 		// send server message to client 
-        char *msg = "thanks!\n";
-		write(sockfd, msg, sizeof(msg));
+        char *msg_to_qt = "thanks!";
+		write(sockfd, msg_to_qt, sizeof(msg_to_qt));
 
 		bzero(buff, MAX_BUF_LEN); 
-  
-        // read the message from client and copy it in buffer  
-        read(sockfd, buff, sizeof(buff)); 
-
-		// print buffer which contains the client contents 
-        printf("From client: %s\t To client : %s", buff + BUFF_QTSOCK_OFFSET, msg); 
-
-
+		int num_bytes_read = read(sockfd, buff, sizeof(buff));
 		
-        // if msg contains "Exit" then server exit and chat ended. 
-        if (strncmp("exit", buff, 4) == 0) { 
-            printf("Server Exit...\n"); 
-            break; 
-        } 
+		std::string msg_in;
+		msg_in.append(buff+BUFF_QTSOCK_OFFSET, num_bytes_read-BUFF_QTSOCK_OFFSET);
+		int msg_len = std::stoi(msg_in.substr(0, msg_in.find("_")));
+		
+		int bytes_remaining = msg_len - (msg_in.length() - msg_in.find("_") - 1);
+		
+		std::string msg = msg_in.substr(msg_in.find("_")+1);
+		
+		// read remaing buffer
+		while (bytes_remaining >= 0) {
+			bzero(buff, MAX_BUF_LEN);
+			num_bytes_read = read(sockfd, buff, sizeof(buff));
+			bytes_remaining -= num_bytes_read;
+			msg.append(buff, num_bytes_read);
+		}
 
-		voice_modification_mode(synth);
+		printf("message sent: %s, message received: %s\n", msg_to_qt, msg.c_str());
+		JSON board_info = JSON::parse(msg);
+		std::cout << board_info["adsr"].dump(4) << std::endl;
+
+		synth->update_voice_gain(1, 0.05);
+		synth->load_sinewave(1, 440);
     } 
 } 
 
@@ -284,7 +295,7 @@ int main() {
 		} 
 
 		// Function for chatting between client and server 
-		connect_with_client(connfd); 
+		connect_with_qt(connfd); 
 	}
 	
 	// After chatting close the socket 
