@@ -4,6 +4,7 @@
 #include "kernel/kernel.h"
 #include <iostream>
 #include <JuceHeader.h>
+#include "SynthADSR.h"
 
 class Engine {
      private:
@@ -18,7 +19,7 @@ class Engine {
          float *fundamental_freqs;
          float time;
 
-        // ADSR *adsr;
+	SynthADSR *adsr;
        
          int *freq_ratios;
          int num_samples;

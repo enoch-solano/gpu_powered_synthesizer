@@ -7,13 +7,13 @@ Engine* Engine::engine = NULL;
 
 Engine::Engine(int num_samples) { 
           
-          // adsr = new ADSR();
+          adsr = new SynthADSR();
           
-          // // initialize adsr settingsinclude cud
-          // adsr->setAttackRate(.1 * SAMPLING_FREQUENCY);	// .1 seconds
-          // adsr->setDecayRate(.3 * SAMPLING_FREQUENCY);	// .3 seconds
-          // adsr->setReleaseRate(5 * SAMPLING_FREQUENCY);	// 5 seconds
-          // adsr->setSustainLevel(.8);
+          // initialize adsr settingsinclude cud
+          adsr->setAttackRate(.1 * SAMPLING_FREQUENCY);	// .1 seconds
+          adsr->setDecayRate(.3 * SAMPLING_FREQUENCY);	// .3 seconds
+          adsr->setReleaseRate(5 * SAMPLING_FREQUENCY);	// 5 seconds
+          adsr->setSustainLevel(.8);
           num_voices= NUM_VOICES_INIT;
           num_harms = NUM_HARMS_INIT;
           num_sinusoids= num_harms * num_voices;
