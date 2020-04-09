@@ -1,6 +1,6 @@
 #pragma once
 
-#define NUM_VOICES 12/* number of voices */
+#define NUM_VOICES 4/* number of voices */
 #define NUM_HARMS  12/* number of harmonics in a voice */
 
 #define NUM_SINES 100
@@ -18,6 +18,8 @@
 
 //#define WINDOWS_MACHINE
 #define JETSON_NANO
+
+#define USING_QT_GUI
 
 /* time variable used by sine waves */
 static float angle_m = 0;

@@ -134,3 +134,115 @@ void print_harmonics(int v_idx, Engine *synth) {
 
 	printf("%.1f\n\n", synth->get_gain(v_idx, NUM_HARMS -1));
 }
+
+// ---- TERMINAL I/O FUNCTIONS ---- //
+
+/*
+  updates voice gains in the GPU
+*/
+int modify_voice_gain(int v_idx, Engine*engine) {
+	printf(" | | Enter the value to update the amplitude of the voice: ");
+	float gain = get_float();
+
+	engine->update_voice_gain(v_idx, gain);
+
+	return 1;
+}
+
+/*
+  updates harmonic gains and freqs in the GPU
+*/
+int modify_harmonic(int v_idx, Engine*engine) {
+	int h_idx = -1;
+	printf(" | | Select a harmonic (enter a number between 1-%d): ", NUM_HARMS);
+	while (h_idx < 0) {
+		h_idx = get_int();
+
+		if (h_idx == 0 || h_idx > NUM_HARMS) {
+			printf(" | | Invalid harmonic selected. ");
+			printf("Select a harmonic (enter a number between 1-%d): ", NUM_HARMS);
+			h_idx = -1;
+		}
+	}
+
+	h_idx--;	// makes sure it's zero indexed
+
+	printf(" | | | Enter the value to update the amplitude of the harmonic: ");
+	float gain = get_float();
+    engine->update_harmonics(v_idx, h_idx, gain);
+
+	return 1;
+}
+
+enum input_mode {
+	EXIT,
+	QUIT,
+	INVALID,
+	HARMONIC_MOD,		// modify harmonic 
+	VOICE_MOD,			// modify voice gain
+	SEL_PRESET			// select preset
+};
+
+int voice_modification_mode(Engine*engine, bool &run) {
+	input_mode curr_mode = INVALID;
+	int voice_idx = -1;
+
+	while (voice_idx < 0) {
+		printf("\nSelect a voice (enter a number between 1-%d): ", NUM_VOICES);
+		voice_idx = get_int();
+   
+		if (voice_idx == -1) {
+			// quiting
+			return -1;
+		}
+		else if (voice_idx == -2) {
+			return -2;
+		}
+		else if (voice_idx == 0 || voice_idx > NUM_VOICES) {
+			printf("Invalid voice selected. ");
+			voice_idx = -1;
+		}
+		else {
+			voice_idx--;	// makes sure it zero-indexes
+
+			input_mode mode = INVALID;
+			while (mode == INVALID) {
+				printf(" | How would like to modify the voice? \n");
+				printf(" |   > L -- to load a voice preset \n");
+				printf(" |   > G -- to modify the amplitude of the voice \n");
+				printf(" |   > H -- to modify a harmonic \n");
+
+
+				char in_c = get_char();
+
+				mode = in_c == 'q' ? QUIT :
+					in_c == 'e' ? EXIT :
+					in_c == 'L' || in_c == 'l' ? SEL_PRESET :
+					in_c == 'G' || in_c == 'g' ? VOICE_MOD :
+					in_c == 'H' || in_c == 'h' ? HARMONIC_MOD : INVALID;
+
+				switch (mode) {
+				case QUIT:
+					return -1;
+				case EXIT:
+					return -2;
+
+				case SEL_PRESET:
+					select_preset(voice_idx, engine);
+					print_harmonics(voice_idx, engine);
+					run = true;
+					break;
+				case VOICE_MOD:
+					modify_voice_gain(voice_idx, engine);
+					break;
+				case HARMONIC_MOD:
+					modify_harmonic(voice_idx, engine);
+					print_harmonics(voice_idx, engine);
+					break;
+				}
+			}
+		}
+	}
+
+	return 1;
+}

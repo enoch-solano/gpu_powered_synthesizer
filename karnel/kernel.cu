@@ -31,9 +31,9 @@ void checkCUDAError(const char *msg, int line = -1) {
 }
 __global__ void my_vh_kernel(float *outBuffer, float2 *freq_gains, float *vgains, float angle, int numSamples, int numSinusoids, int numVoices)
 {
-		int idx = blockIdx.x * blockDim.x + threadIdx.x;
+	int idx = blockIdx.x * blockDim.x + threadIdx.x;
 
-		if (idx < numSamples) {
+	if (idx < numSamples) {
 		// samples sine wave in discrete steps
 		angle = angle + 2.f * M_PI * idx / 44100.f;
 		float buff_val = 0.f;
@@ -41,24 +41,26 @@ __global__ void my_vh_kernel(float *outBuffer, float2 *freq_gains, float *vgains
 
 		for (int i = 0; i < numVoices; i++) {
 			for (int j = 0; j < numHarmonics; j++) {
-					buff_val += vgains[i] * freq_gains[i*numHarmonics + j].y * __sinf(angle * freq_gains[i*numHarmonics + j].x);
+				float gain = vgains[i] * freq_gains[i*numHarmonics + j].y;
+				buff_val += gain * (__sinf(angle * freq_gains[i*numHarmonics + j].x) + 0.5f);
 			}
 		}
 
 		// buffer to be sent to DAC
 		outBuffer[idx] = buff_val;
-		}
+	}
 }
 
 void Additive::my_v_compute(float *buffer, float angle, 
-	float* h_buffer, float* h_v_gains,
-	 float2* h_freq_gains, int numSamples,
+		float* h_buffer, float* h_v_gains,
+		float2* h_freq_gains, int numSamples,
 		int numSinusoids, int numVoices) 
 	{
 		int threadsPerBlock = 256;
 		int blocksPerGrid = (numSamples + threadsPerBlock - 1) / threadsPerBlock;
 		float *dev_buffer, *dev_v_gains;
 		float2* dev_freq_gains;
+
 		cudaHostGetDevicePointer((void**)&dev_freq_gains, (void*)h_freq_gains, 0);
 		checkCUDAError("dev_freq_gains get Device Pointer", __LINE__);
 
@@ -68,9 +70,10 @@ void Additive::my_v_compute(float *buffer, float angle,
 	
 		cudaHostGetDevicePointer((void**)&dev_buffer, (void*)h_buffer, 0);
 		checkCUDAError("dev_buffer get Device Pointer", __LINE__);
+
 		my_vh_kernel <<< blocksPerGrid, threadsPerBlock >>> (dev_buffer, dev_freq_gains, dev_v_gains,
 										angle, numSamples, numSinusoids, numVoices);
-    //std::cout << "yeet" << std::endl;
+										
 		// updates the buffer with dev_buffer computed in GPU
 		cudaMemcpy(buffer, dev_buffer, numSamples * sizeof(float), cudaMemcpyDeviceToHost);
 }

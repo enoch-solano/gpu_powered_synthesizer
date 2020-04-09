@@ -39,6 +39,8 @@ cuda_add_executable(${CMAKE_PROJECT_NAME}
       	"src/RtAudio.h"
         "src/ADSR.cpp"
         "src/ADSR.h"
+        "src/lfo.cpp"
+        "src/lfo.h"
         "src/engine.h"
         "src/engine.cpp"
     )
