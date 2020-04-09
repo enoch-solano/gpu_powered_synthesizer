@@ -24,7 +24,9 @@ Engine::Engine(int num_samples) {
           for(int i = 0; i < num_voices; i++){
                h_v_gains[i]  = 1.0;
           }
-          load_sinewave(0, 440);
+          load_square_wave(0, 440);
+          load_sawtooth(1,440);
+          load_sinewave(2,440);
 }      
 
 void Engine::realloc_engine(int num_samples){
@@ -37,6 +39,14 @@ Engine* Engine::getInstance(int num_samples){
          engine->realloc_engine(num_samples);
      }
      return Engine::engine;
+}
+
+void Engine::toggleMute(int v_idx, float voicelvl){
+     if(h_v_gains[v_idx-1] != 0.0){
+          h_v_gains[v_idx-1] = 0.0;
+     } else {
+          h_v_gains[v_idx-1] = voicelvl;
+     }
 }
 
 Engine* Engine::getInstance(){
@@ -58,10 +68,10 @@ void Engine::load_sawtooth(int v_idx, int f) {
      }
 }
 void Engine::load_square_wave(int v_idx, int f) {
-      update_fundamental(v_idx, f);
+      //update_fundamental(v_idx, f);
      for (int i = 0; i < num_harms; i++) {
           h_freq_gains[v_idx*num_harms + i].y = 1.f / (1.f + (2 * i)); //gain
-          //h_freq_gains[v_idx*num_harms + i].x = (1.f + (2 * i)) * f;   //freq
+          h_freq_gains[v_idx*num_harms + i].x = (1.f + (2 * i)) * f;   //freq
           //freq_ratios[v_idx*num_harms +i] = (1 + (2 * i));
      }
 }
@@ -120,7 +130,7 @@ void Engine::tick(void* outputBuffer){
 void Engine::simple_tick(void *outputBuffer, int num_Samples){
     // std::cout<< "tick" <<std::endl;
      Additive::my_v_compute((float*)outputBuffer, angle, 
-     h_buffer,h_v_gains, h_freq_gains, this->num_samples, num_voices_sinusoids, num_voices);
+     h_buffer,h_v_gains, h_freq_gains, this->num_samples, num_sinusoids, num_voices);
  //std::cout << "angle ion engine b4 add" << angle <<std::endl;
      // float a = 2.0f * 3.14f;
      // float b = a * this->num_samples;

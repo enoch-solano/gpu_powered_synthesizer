@@ -194,7 +194,7 @@ Gui::Gui ()
 
     voice1lvl.reset (new Slider ("Voice 1 Level"));
     addAndMakeVisible (voice1lvl.get());
-    voice1lvl->setRange (0, 10, 0);
+    voice1lvl->setRange (0, 1.0, 0);
     voice1lvl->setSliderStyle (Slider::RotaryHorizontalVerticalDrag);
     voice1lvl->setTextBoxStyle (Slider::NoTextBox, false, 80, 20);
     voice1lvl->addListener (this);
@@ -215,7 +215,7 @@ Gui::Gui ()
 
     voice2lvl.reset (new Slider ("Voice 2 Level"));
     addAndMakeVisible (voice2lvl.get());
-    voice2lvl->setRange (0, 1, 0);
+    voice2lvl->setRange (0, 1.0, 0);
     voice2lvl->setSliderStyle (Slider::RotaryHorizontalVerticalDrag);
     voice2lvl->setTextBoxStyle (Slider::NoTextBox, false, 80, 20);
     voice2lvl->setColour (Slider::thumbColourId, Colour (0xffc87c42));
@@ -238,7 +238,7 @@ Gui::Gui ()
 
     voice3lvl.reset (new Slider ("Voice 3 level"));
     addAndMakeVisible (voice3lvl.get());
-    voice3lvl->setRange (0, 10, 0);
+    voice3lvl->setRange (0, 1.0, 0);
     voice3lvl->setSliderStyle (Slider::RotaryHorizontalVerticalDrag);
     voice3lvl->setTextBoxStyle (Slider::NoTextBox, false, 80, 20);
     voice3lvl->setColour (Slider::thumbColourId, Colour (0xff02c86a));
@@ -261,7 +261,7 @@ Gui::Gui ()
 
     voice4lvl.reset (new Slider ("Voice 4 level"));
     addAndMakeVisible (voice4lvl.get());
-    voice4lvl->setRange (0.5, 10, 0.5);
+    voice4lvl->setRange (0.0, 1, 0);
     voice4lvl->setSliderStyle (Slider::RotaryHorizontalVerticalDrag);
     voice4lvl->setTextBoxStyle (Slider::NoTextBox, false, 80, 20);
     voice4lvl->setColour (Slider::thumbColourId, Colour (0xffc453b1));
@@ -709,24 +709,28 @@ void Gui::buttonClicked (Button* buttonThatWasClicked)
     {
         buttonState = !buttonState;
         buttonThatWasClicked->setToggleState(buttonState, 0);
+        synth->toggleMute(1, (float)voice1lvl.get()->getValue());
     }
 
         else if (buttonThatWasClicked == voice2Mute.get())
     {
         buttonState = !buttonState;
         buttonThatWasClicked->setToggleState(buttonState, 0);
+        synth->toggleMute(2, (float)voice2lvl.get()->getValue());
     }
 
         else if (buttonThatWasClicked == voice3Mute.get())
     {
         buttonState = !buttonState;
         buttonThatWasClicked->setToggleState(buttonState, 0);
+        synth->toggleMute(3, (float)voice3lvl.get()->getValue());
     }
 
         else if (buttonThatWasClicked == voice4Mute.get())
     {
         buttonState = !buttonState;
         buttonThatWasClicked->setToggleState(buttonState, 0);
+        synth->toggleMute(4, (float)voice4lvl.get()->getValue());
     }
     //[/UserbuttonClicked_Post]
 }

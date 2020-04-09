@@ -37,6 +37,7 @@ class Engine {
     public: 
     void update_fundamental(int v_idx, float freq);
 	     void process_adsr(void* outputBuffer);
+          void toggleMute(int v_idx, float voicelvl);
 static Engine* getInstance();
          static Engine* getInstance(int num_samples);
          void load_sawtooth(int v_idx, int f);
