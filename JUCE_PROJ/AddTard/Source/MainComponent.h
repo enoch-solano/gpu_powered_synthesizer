@@ -9,7 +9,7 @@
 #pragma once
 
 #include <JuceHeader.h>
-#include "engine.h"
+//#include "engine.h"
 #include "Gui.h"
 
 
@@ -46,6 +46,7 @@ private:
     float amplitude = 0.8f;
     std::unique_ptr<DrawableButton> trigger;
     std::unique_ptr<TopLevelWindow> guiWin;
+    std::unique_ptr<Gui> guiPtr;
 
     AudioDeviceManager audioDeviceManager;
     TextEditor diagnosticsBox;

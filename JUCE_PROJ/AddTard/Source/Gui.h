@@ -21,6 +21,7 @@
 
 //[Headers]     -- You can add your own extra header files here --
 #include <JuceHeader.h>
+#include "engine.h"
 //#include <juce_Drawable.h>
 //#include <juce_DrawableButton.h>
 //[/Headers]
@@ -52,7 +53,7 @@ public:
     void resized() override;
     void sliderValueChanged (Slider* sliderThatWasMoved) override;
     void buttonClicked (Button* buttonThatWasClicked) override;
-
+     Engine* synth = NULL;
 
 
 private:
@@ -77,6 +78,7 @@ private:
     std::unique_ptr<TextButton> home;
     std::unique_ptr<TextButton> settings;
     std::vector<TextButton*> menuButtons {};
+   
 
 
 

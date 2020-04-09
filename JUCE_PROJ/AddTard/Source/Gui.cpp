@@ -31,7 +31,7 @@
 Gui::Gui ()
 {
     //[Constructor_pre] You can add your own custom stuff here..
-
+    
     //path creation for all drawable buttons
     Path path;
     Rectangle<float> area (47, 48);
@@ -215,7 +215,7 @@ Gui::Gui ()
 
     voice2lvl.reset (new Slider ("Voice 2 Level"));
     addAndMakeVisible (voice2lvl.get());
-    voice2lvl->setRange (0, 10, 0);
+    voice2lvl->setRange (0, 1, 0);
     voice2lvl->setSliderStyle (Slider::RotaryHorizontalVerticalDrag);
     voice2lvl->setTextBoxStyle (Slider::NoTextBox, false, 80, 20);
     voice2lvl->setColour (Slider::thumbColourId, Colour (0xffc87c42));
@@ -582,7 +582,7 @@ void Gui::sliderValueChanged (Slider* sliderThatWasMoved)
     if (sliderThatWasMoved == voice1lvl.get())
     {
         //[UserSliderCode_voice1lvl] -- add your slider handling code here..
-
+       
         //[/UserSliderCode_voice1lvl]
     }
     else if (sliderThatWasMoved == voice1freq.get())

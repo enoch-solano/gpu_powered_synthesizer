@@ -1,7 +1,7 @@
 #pragma once
 
-#define NUM_VOICES 1/* number of voices */
-#define NUM_HARMS  1/* number of harmonics in a voice */
+#define NUM_VOICES_INIT 4/* number of voices */
+#define NUM_HARMS_INIT 64/* number of harmonics in a voice */
 
 #define NUM_SINES 100
 #define _PI 3.1415926535897931

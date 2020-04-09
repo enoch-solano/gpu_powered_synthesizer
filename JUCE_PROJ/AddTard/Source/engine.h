@@ -35,8 +35,9 @@ class Engine {
          void update_freqs();
          void realloc_engine(int num_samples);
     public: 
+    void update_fundamental(int v_idx, float freq);
 	     void process_adsr(void* outputBuffer);
-
+static Engine* getInstance();
          static Engine* getInstance(int num_samples);
          void load_sawtooth(int v_idx, int f);
          void load_square_wave(int v_idx, int f);

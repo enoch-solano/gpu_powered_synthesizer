@@ -67,7 +67,9 @@ MainComponent::MainComponent()
         logMessage ("Audio device diagnostics:\n");
         dumpDeviceInfo();
 
-        addAndMakeVisible( new Gui());
+        guiPtr.reset(new Gui());
+        addAndMakeVisible(guiPtr.get());
+        guiPtr.get()->synth = Engine::getInstance();
         setSize (500, 600);
 }
 
