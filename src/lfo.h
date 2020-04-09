@@ -2,12 +2,15 @@
 #include <string>
 #include <cmath>
 
-enum LFO_WAVE { SINE_WAVE_LFO = 0, SQUARE_WAVE_LFO = 1 };
+#define NUM_LFO_WAVES 2
+
+#define SINE_WAVE_LFO   0
+#define SQUARE_WAVE_LFO 1
 
 class LFO {
 private:
     float m_freq, m_gain;
-    LFO_WAVE m_type;
+    int m_type;
 
 public:
     LFO();
@@ -16,7 +19,7 @@ public:
 
     void set_level(float gain)   { m_gain = gain; }
     void set_rate(float freq)    { m_freq = freq; }
-    void set_type(LFO_WAVE type) { m_type = type; }
+    void set_type(int type) { m_type = type; }
 
     float process(float angle);
     void batch_gain_process(int num, float *output, float angle);

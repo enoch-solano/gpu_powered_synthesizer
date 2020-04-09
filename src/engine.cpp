@@ -65,8 +65,10 @@ Engine::Engine() {
      global_mute = 1;
 }
 
-Engine* Engine::getInstance(){
-     if (!engine) engine = new Engine();
+Engine* Engine::getInstance() {
+     if (!engine) 
+          engine = new Engine();
+     
      return engine;
 }
 
@@ -91,8 +93,8 @@ void Engine::load_square_wave(int v_idx, int f) {
 }
 
 void Engine::load_sinewave(int v_idx, int f) {
-          h_freq_gains[v_idx*NUM_HARMS].y = 1; // gain
-          h_freq_gains[v_idx*NUM_HARMS].x = f;   // freq
+     h_freq_gains[v_idx*NUM_HARMS].y = 1; // gain
+     h_freq_gains[v_idx*NUM_HARMS].x = f;   // freq
      
 }
 
@@ -118,6 +120,13 @@ void Engine::process_gain_lfo(void *outputBuffer, float angle) {
     gain_lfo->batch_gain_process(NUM_SAMPLES, (float*)outputBuffer, angle);
 }
 
+void Engine::set_gain_lfo_rate(float rate) {
+     gain_lfo->set_rate(rate);
+}
+
+void Engine::set_gain_lfo_level(float level) {
+     gain_lfo->set_level(level);
+}
 
 // ----------- getters/setters ----------- //
 

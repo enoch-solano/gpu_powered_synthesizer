@@ -34,8 +34,14 @@ protected:
 
     int m_prev_attack_val; 
     int m_prev_decay_val; 
+    int m_prev_sustain_val;
     int m_prev_release_val; 
-    int m_prev_sustain_val; 
+
+    int m_prev_lfo_rate_val; 
+    int m_prev_lfo_level_val;
+
+    int m_lfo_type;
+    int m_num_lfo_types; 
 
 public:
     QtUI(Engine *synth) 
@@ -47,8 +53,14 @@ public:
 
         m_prev_attack_val = 0;
         m_prev_decay_val = 0;
-        m_prev_release_val = 0;
         m_prev_sustain_val = 0;
+        m_prev_release_val = 0;
+        
+        m_prev_lfo_rate_val = 0; 
+        m_prev_lfo_level_val = 0;
+
+        m_lfo_type = SINE_WAVE_LFO;
+        m_num_lfo_types = NUM_LFO_WAVES;
     }
     
     QtUI(const QtUI& ui) 
@@ -62,8 +74,15 @@ public:
 
         m_prev_attack_val = ui.m_prev_attack_val;
         m_prev_decay_val = ui.m_prev_decay_val;
-        m_prev_release_val = ui.m_prev_release_val;
         m_prev_sustain_val = ui.m_prev_sustain_val;
+        m_prev_release_val = ui.m_prev_release_val;
+
+
+        m_prev_lfo_rate_val = ui.m_prev_lfo_rate_val;
+        m_prev_lfo_level_val = ui.m_prev_lfo_level_val;
+
+        m_lfo_type = ui.m_lfo_type;
+        m_num_lfo_types = ui.m_num_lfo_types;
     }
     
     ~QtUI() { if (sockfd != -1) close(sockfd); }
@@ -77,6 +96,7 @@ private:
 
 // update the engine based on the state of the board (given as JSON packet)
 void QtUI::update_state(const JSON &board) {
+    // ---- voice ctrl ---- //
     for (int i = 0; i < NUM_VOICES; i++) {
         std::string voice = "voice" + std::to_string(i);
 
@@ -92,6 +112,7 @@ void QtUI::update_state(const JSON &board) {
         }
     }
 
+    // ---- global ctrl ---- //
     float global_gain = board["vol"]["knob"]["vol"];
     synth->update_global_gain(global_gain / 100.f);
 
@@ -99,10 +120,11 @@ void QtUI::update_state(const JSON &board) {
         synth->toggle_global_mute();
     }
 
+    // ---- adsr ---- //
     int attack_val  = board["adsr"]["knob"]["attack"];
     int decay_val   = board["adsr"]["knob"]["decay"];
-    int release_val = board["adsr"]["knob"]["release"];
     int sustain_val = board["adsr"]["knob"]["sustain"];
+    int release_val = board["adsr"]["knob"]["release"];
 
     if (m_prev_attack_val != attack_val) {
         synth->setAttackRate(attack_val / 20.f);
@@ -112,20 +134,37 @@ void QtUI::update_state(const JSON &board) {
         synth->setDecayRate(decay_val / 20.f);
     }
 
-    if (m_prev_release_val != release_val) {
-        synth->setReleaseRate(release_val / 20.f);
-    }
-
     if (m_prev_sustain_val != sustain_val) {
         synth->setSustainLevel(sustain_val / 100.f);
     }
 
+    if (m_prev_release_val != release_val) {
+        synth->setReleaseRate(release_val / 20.f);
+    }
+
     m_prev_attack_val  = attack_val;
     m_prev_decay_val   = decay_val;
-    m_prev_release_val = release_val;
     m_prev_sustain_val = sustain_val;
-    
+    m_prev_release_val = release_val;
 
+    // ---- lfo ---- //
+    int lfo_type_val  = board["lfo"]["knob"]["type"];
+    int lfo_rate_val  = board["lfo"]["knob"]["rate"];
+    int lfo_level_val = board["lfo"]["knob"]["level"];
+    
+    if (m_prev_lfo_rate_val != lfo_rate_val) {
+        synth->set_gain_lfo_rate(lfo_rate_val / 5.f);
+    }
+
+    if (m_prev_lfo_level_val != lfo_level_val) {
+        synth->set_gain_lfo_level(lfo_level_val / 100.f);
+    }
+
+    m_prev_lfo_rate_val  = lfo_rate_val; 
+    m_prev_lfo_level_val = lfo_level_val;
+    m_lfo_type = lfo_type_val / m_num_lfo_types;
+
+    // ---- preset ---- //
     int selected_preset = board["selected_preset"];
 
     switch (selected_preset) {
@@ -142,6 +181,7 @@ void QtUI::update_state(const JSON &board) {
         break;
     }
 
+    // ---- key press/release ---- //
     for (int i = 0; i < NUM_KEYS; i++) {
         std::string key = "key" + std::to_string(i);
         int key_pressed = board["key_pressed"][key];

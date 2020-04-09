@@ -75,4 +75,6 @@ class Engine {
 
         // LFO functionality
         void process_gain_lfo(void *outputBuffer, float angle);
+        void set_gain_lfo_rate(float rate);
+        void set_gain_lfo_level(float level);
 };
