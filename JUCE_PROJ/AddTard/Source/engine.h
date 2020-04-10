@@ -4,6 +4,7 @@
 #include "kernel/kernel.h"
 #include <iostream>
 #include <JuceHeader.h>
+#include "SynthADSR.h"
 
 class Engine {
      private:
@@ -14,11 +15,14 @@ class Engine {
          float *h_v_gains;      // gain for overall voice
          float *h_buffer;
          float *h_tmp_buffer;
-         float* samples;
+         float *h_adsr;
+         float *samples;
          float *fundamental_freqs;
          float time;
+         bool v_on[4];
 
-        // ADSR *adsr;
+
+	    SynthADSR *adsr[4];
        
          int *freq_ratios;
          int num_samples;
@@ -39,6 +43,8 @@ class Engine {
     void update_fundamental(int v_idx, float freq);
 	     void process_adsr(void* outputBuffer);
           void toggleMute(int v_idx, float voicelvl);
+          void get_adsr(int v_idx, float* curr_adsr);
+          void set_adsr(int v_idx, float* new_adsr);
 static Engine* getInstance();
          static Engine* getInstance(int num_samples);
          void load_sawtooth(int v_idx, int f);
@@ -49,6 +55,7 @@ static Engine* getInstance();
          void update_harmonics(int v_idx, int harmonic, float gain);
          float get_freq(int v_idx, int harmonic);
          float get_gain(int v_idx, int harmonic);
+         bool get_mute(int v_idx);
          void gate_off();
          void gate_on();
          void load_sinewave(int v_idx, int f);

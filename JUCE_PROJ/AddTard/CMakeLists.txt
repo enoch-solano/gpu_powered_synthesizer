@@ -5,7 +5,7 @@ cmake_minimum_required(VERSION 3.4)
 project("AddTard")
 
 
-list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/../FRUT/prefix/FRUT/cmake")
+list(APPEND CMAKE_MODULE_PATH "/home/mason/FRUT/prefix/FRUT/cmake")
 include(Reprojucer)
 # CUDA
 list(APPEND CUDA_NVCC_FLAGS_DEBUG -G -g)
@@ -31,7 +31,7 @@ add_subdirectory(Source/kernel)
 set(AddTard_jucer_FILE
   "${CMAKE_CURRENT_LIST_DIR}/AddTard.jucer"
 )
-#target_link_libraries(${PROJECT_NAME} kernel)
+
 link_directories(${CUDA_TOOLKIT_ROOT_DIR}/include)
 link_directories(${CUDA_TOOLKIT_ROOT_DIR}/lib64)
 set(JUCE_MODULES_GLOBAL_PATH "/home/mason/JUCE/modules")
@@ -66,6 +66,8 @@ jucer_project_files("AddTard/Source"
   x         .         .         "Source/Gui.h"
   x         .         .         "Source/Display.cpp"
   x         .         .         "Source/Display.h"
+  x         .         .         "Source/SynthADSR.h"
+  x         .         .         "Source/SynthADSR.cpp"
 )
 
 jucer_project_module(

@@ -235,7 +235,7 @@ Gui::Gui ()
 
     voice4lvl.reset (new Slider ("Voice 4 level"));
     addAndMakeVisible (voice4lvl.get());
-    voice4lvl->setRange (0.5, 10, 0.5);
+    voice4lvl->setRange (0.0, 1, 0);
     voice4lvl->setSliderStyle (Slider::RotaryHorizontalVerticalDrag);
     voice4lvl->setTextBoxStyle (Slider::NoTextBox, false, 80, 20);
     voice4lvl->setColour (Slider::thumbColourId, Colour (0xffc453b1));
@@ -353,6 +353,10 @@ Gui::Gui ()
 
     textButton->setBounds (696, 48, 150, 24);
 
+    adsrSliders.push_back(atk.get());
+    adsrSliders.push_back(dec.get());
+    adsrSliders.push_back(sus.get());
+    adsrSliders.push_back(rel.get());
 
     //[UserPreSize]
     //[/UserPreSize]
@@ -545,20 +549,31 @@ void Gui::sliderValueChanged (Slider* sliderThatWasMoved)
 {
     //[UsersliderValueChanged_Pre]
     //[/UsersliderValueChanged_Pre]
+    for (int i = 0; i < 4; i++)
+    {
+        if (sliderThatWasMoved == adsrSliders[i])
+        {
+            int v_idx = display->getCurrVoice();
 
+        }
+    }
     if (sliderThatWasMoved == voice1lvl.get())
     {
         //[UserSliderCode_voice1lvl] -- add your slider handling code here..
+       synth->update_voice_gain(0, voice1lvl.get()->getValue());
         //[/UserSliderCode_voice1lvl]
     }
     else if (sliderThatWasMoved == voice1freq.get())
     {
         //[UserSliderCode_voice1freq] -- add your slider handling code here..
+       
         //[/UserSliderCode_voice1freq]
     }
     else if (sliderThatWasMoved == voice2lvl.get())
     {
         //[UserSliderCode_voice2lvl] -- add your slider handling code here..
+         synth->update_voice_gain(1, voice2lvl.get()->getValue());
+
         //[/UserSliderCode_voice2lvl]
     }
     else if (sliderThatWasMoved == voice2freq.get())
@@ -569,7 +584,11 @@ void Gui::sliderValueChanged (Slider* sliderThatWasMoved)
     else if (sliderThatWasMoved == voice3lvl.get())
     {
         //[UserSliderCode_voice3lvl] -- add your slider handling code here..
-        //[/UserSliderCode_voice3lvl]
+         if(synth->get_mute(2))
+         {
+             synth->update_voice_gain(2, voice3lvl.get()->getValue());
+         }
+       //[/UserSliderCode_voice3lvl]
     }
     else if (sliderThatWasMoved == voice3freq.get())
     {
@@ -579,6 +598,7 @@ void Gui::sliderValueChanged (Slider* sliderThatWasMoved)
     else if (sliderThatWasMoved == voice4lvl.get())
     {
         //[UserSliderCode_voice4lvl] -- add your slider handling code here..
+         synth->update_voice_gain(3, voice4lvl.get()->getValue());
         //[/UserSliderCode_voice4lvl]
     }
     else if (sliderThatWasMoved == voice4freq.get())
@@ -586,26 +606,27 @@ void Gui::sliderValueChanged (Slider* sliderThatWasMoved)
         //[UserSliderCode_voice4freq] -- add your slider handling code here..
         //[/UserSliderCode_voice4freq]
     }
-    else if (sliderThatWasMoved == atk.get())
-    {
-        //[UserSliderCode_atk] -- add your slider handling code here..
-        //[/UserSliderCode_atk]
-    }
-    else if (sliderThatWasMoved == dec.get())
-    {
-        //[UserSliderCode_dec] -- add your slider handling code here..
-        //[/UserSliderCode_dec]
-    }
-    else if (sliderThatWasMoved == sus.get())
-    {
-        //[UserSliderCode_sus] -- add your slider handling code here..
-        //[/UserSliderCode_sus]
-    }
-    else if (sliderThatWasMoved == rel.get())
-    {
-        //[UserSliderCode_rel] -- add your slider handling code here..
-        //[/UserSliderCode_rel]
-    }
+    // else if (sliderThatWasMoved == atk.get())
+    // {
+    //     //[UserSliderCode_atk] -- add your slider handling code here..
+    //     //[/UserSliderCode_atk]
+    // }
+    // else if (sliderThatWasMoved == dec.get())
+    // {
+    //     //[UserSliderCode_dec] -- add your slider handling code here..
+
+    //     //[/UserSliderCode_dec]
+    // }
+    // else if (sliderThatWasMoved == sus.get())
+    // {
+    //     //[UserSliderCode_sus] -- add your slider handling code here..
+    //     //[/UserSliderCode_sus]
+    // }
+    // else if (sliderThatWasMoved == rel.get())
+    // {
+    //     //[UserSliderCode_rel] -- add your slider handling code here..
+    //     //[/UserSliderCode_rel]
+    // }
     else if (sliderThatWasMoved == lfoRate.get())
     {
         //[UserSliderCode_lfoRate] -- add your slider handling code here..
@@ -707,13 +728,43 @@ void Gui::buttonClicked (Button* buttonThatWasClicked)
         buttonThatWasClicked->setToggleState(buttonState, 0);
         synth->toggleMute(4, (float)voice4lvl.get()->getValue());
     }
+    // else if (buttonThatWasClicked == trigger.get())
+    // {
+       
+    // }
     //[/UserbuttonClicked_Post]
 }
 
 
 
 //[MiscUserCode] You can add your own definitions of your custom methods or any other code here...
+bool Gui::keyPressed(const KeyPress &k) 
+{
+    if (k == KeyPress::spaceKey)
+    {
+        //std::cout<<"space pressed"<<std::endl;
+    }
+}
 
+bool Gui::keyStateChanged(bool isKeyDown)
+{
+    static auto lastSpaceKeyIsDown = false;
+
+    auto newSpaceKeyIsDown = KeyPress::isKeyCurrentlyDown(KeyPress::spaceKey);
+
+    if (newSpaceKeyIsDown != lastSpaceKeyIsDown)
+    {
+        lastSpaceKeyIsDown = newSpaceKeyIsDown;
+        if(newSpaceKeyIsDown)
+        {
+            synth->gate_on();
+        }
+        else 
+        {
+            synth->gate_off();
+        }
+    }
+}
 //[/MiscUserCode]
 
 

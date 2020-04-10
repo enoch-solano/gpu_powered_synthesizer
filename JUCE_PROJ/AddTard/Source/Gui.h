@@ -58,6 +58,8 @@ public:
 
     enum voiceColors {v1On = 0xff42a2c8, v2On = 0xffc87c42, v3On = 0xff02c86a, v4On = 0xffc453b1,
                       v1Off = 0xff36677a, v2Off = 0xff7e6447, v3Off = 0xff346d52, v4Off = 0xff6f3966};
+    bool keyPressed(const KeyPress &k) override;
+    bool keyStateChanged(bool isKeyDown) override;
 
 
 private:
@@ -75,7 +77,8 @@ private:
 
     std::unique_ptr<Display> display;
 
-
+    std::vector<Slider*> adsrSliders {};
+    float adsr[4];
 
 
 

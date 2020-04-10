@@ -111,7 +111,7 @@ void Display::sliderValueChanged (Slider* sliderThatWasMoved)
     {
         if (sliderThatWasMoved == harmonics[i])
         {
-            synth->update_harmonics(currVoice, i, sliderThatWasMoved->getValue()));
+            synth->update_harmonics(currVoice, i, sliderThatWasMoved->getValue());
         }
     }
 }
@@ -144,6 +144,11 @@ void Display::updateSliders()
 void Display::setCurrVoice(int newVoice)
 {
     currVoice = newVoice;
+}
+
+int Display::getCurrVoice()
+{
+    return currVoice;
 }
 //[/MiscUserCode]
 
