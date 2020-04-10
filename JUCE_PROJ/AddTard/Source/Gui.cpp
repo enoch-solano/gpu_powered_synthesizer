@@ -584,11 +584,8 @@ void Gui::sliderValueChanged (Slider* sliderThatWasMoved)
     else if (sliderThatWasMoved == voice3lvl.get())
     {
         //[UserSliderCode_voice3lvl] -- add your slider handling code here..
-         if(synth->get_mute(2))
-         {
-             synth->update_voice_gain(2, voice3lvl.get()->getValue());
-         }
-       //[/UserSliderCode_voice3lvl]
+         synth->update_voice_gain(2, voice3lvl.get()->getValue());
+        //[/UserSliderCode_voice3lvl]
     }
     else if (sliderThatWasMoved == voice3freq.get())
     {
@@ -708,28 +705,28 @@ void Gui::buttonClicked (Button* buttonThatWasClicked)
     {
         buttonState = !buttonState;
         buttonThatWasClicked->setToggleState(buttonState, 0);
-        synth->toggleMute(1, (float)voice1lvl.get()->getValue());
+        synth->toggleMute(0);
     }
 
         else if (buttonThatWasClicked == voice2Mute.get())
     {
         buttonState = !buttonState;
         buttonThatWasClicked->setToggleState(buttonState, 0);
-        synth->toggleMute(2, (float)voice2lvl.get()->getValue());
+        synth->toggleMute(1);
     }
 
         else if (buttonThatWasClicked == voice3Mute.get())
     {
         buttonState = !buttonState;
         buttonThatWasClicked->setToggleState(buttonState, 0);
-        synth->toggleMute(3, (float)voice3lvl.get()->getValue());
+        synth->toggleMute(2);
     }
 
         else if (buttonThatWasClicked == voice4Mute.get())
     {
         buttonState = !buttonState;
         buttonThatWasClicked->setToggleState(buttonState, 0);
-        synth->toggleMute(4, (float)voice4lvl.get()->getValue());
+        synth->toggleMute(3);
     }
     // else if (buttonThatWasClicked == trigger.get())
     // {
