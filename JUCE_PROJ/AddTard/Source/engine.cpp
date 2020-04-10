@@ -27,11 +27,15 @@ Engine::Engine(int num_samples) {
     this->num_samples = num_samples;
 
     Additive::alloc_engine(h_freq_gains, h_angles, h_v_gains, h_tmp_buffer, 
-                           h_buffer, h_adsr, num_samples, num_voices, num_harms);
+                           h_buffer, h_adsr, h_v_ons, num_samples, num_voices, num_harms);
     
     for(int i = 0; i < num_voices; i++){
         h_v_gains[i]  = 1.0;
+        h_v_ons[i] = false;
     }
+
+    // turn on 1 voice to start so it makes some kind of sound 
+    // h_v_ons[1] = true; // we can turn this on once all the harmonics bugs are fixed
 
     load_square_wave(0, 440);
     load_sawtooth(1,440);
@@ -50,14 +54,8 @@ Engine* Engine::getInstance(int num_samples){
      return Engine::engine;
 }
 
-void Engine::toggleMute(int v_idx, float voicelvl){
-     if(v_on[v_idx-1]){
-          h_v_gains[v_idx-1] = 0.0;
-          v_on[v_idx-1] = 0;
-     } else {
-          v_on[v_idx-1] =1;
-          h_v_gains[v_idx-1] = voicelvl;
-     }
+void Engine::toggleMute(int v_idx){
+     h_v_ons[v_idx] = !h_v_ons[v_idx];
 }
 
 Engine* Engine::getInstance(){
@@ -125,7 +123,7 @@ float Engine::get_gain(int v_idx, int harmonic){
 
 bool Engine::get_mute(int v_idx)
 {
-     return v_on[v_idx];
+     return h_v_ons[v_idx];
 }
 
 void Engine::get_adsr(int v_idx, float* curr_adsr)
@@ -198,7 +196,7 @@ void Engine::simple_tick(void *outputBuffer, int num_Samples){
          adsr[i]->process_SynthADSR(this->num_samples, &h_adsr[i * this->num_samples]);
     }
      Additive::my_v_compute((float*)outputBuffer, angle, 
-     h_buffer,h_v_gains, h_freq_gains, h_adsr, this->num_samples, num_sinusoids, num_voices);
+     h_buffer,h_v_gains, h_freq_gains, h_adsr, h_v_ons, this->num_samples, num_sinusoids, num_voices);
  //std::cout << "angle ion engine b4 add" << angle <<std::endl;
      // float a = 2.0f * 3.14f;
      // float b = a * this->num_samples;
