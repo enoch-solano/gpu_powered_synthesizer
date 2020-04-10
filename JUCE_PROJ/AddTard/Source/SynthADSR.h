@@ -40,7 +40,10 @@ public:
 	void setSustainLevel(float level);
 	void setTargetRatioA(float targetRatio);
 	void setTargetRatioDR(float targetRatio);
-	
+	float get_atk();
+	float get_dec();
+	float get_stn();
+	float get_rel();
 	void reset(void);
 
 	enum envState {

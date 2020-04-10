@@ -57,3 +57,24 @@ void SynthADSR::setTargetRatioDR(float targetRatio) {
 	decayBase = (sustainLevel - targetRatioDR) * (1.0 - decayCoef);
 	releaseBase = -targetRatioDR * (1.0 - releaseCoef);
 }
+
+float SynthADSR::get_atk()
+{
+	return attackRate;
+}
+
+float SynthADSR::get_dec()
+{
+	return decayRate;
+}
+
+float SynthADSR::get_stn()
+{
+	return sustainLevel;
+}
+
+float SynthADSR::get_rel()
+{
+	return releaseRate;
+}
+

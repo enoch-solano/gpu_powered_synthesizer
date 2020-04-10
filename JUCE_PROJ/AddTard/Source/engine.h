@@ -20,7 +20,7 @@ class Engine {
         float *samples;
         float *fundamental_freqs;
         float time;
-
+        bool v_on[4];
         SynthADSR *adsr[4];
         LFO *gain_lfo;
         int enable_gain_lfo;
@@ -58,11 +58,16 @@ class Engine {
         void toggleMute(int v_idx, float voicelvl);
         float get_freq(int v_idx, int harmonic);
         float get_gain(int v_idx, int harmonic);
+        bool get_mute(int v_idx);
+
 
         // ADSR functionality
         void gate_on();
         void gate_off();
         void process_adsr(void *outputBuffer);
+        void get_adsr(int v_idx, float* curr_adsr);
+        void set_adsr(int v_idx, float* curr_adsr);
+
         
         // LFO functionality
         void process_gain_lfo(void *outputBuffer, float angle);

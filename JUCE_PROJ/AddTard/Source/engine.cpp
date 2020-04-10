@@ -51,9 +51,11 @@ Engine* Engine::getInstance(int num_samples){
 }
 
 void Engine::toggleMute(int v_idx, float voicelvl){
-     if(h_v_gains[v_idx-1] != 0.0){
+     if(v_on[v_idx-1]){
           h_v_gains[v_idx-1] = 0.0;
+          v_on[v_idx-1] = 0;
      } else {
+          v_on[v_idx-1] =1;
           h_v_gains[v_idx-1] = voicelvl;
      }
 }
@@ -121,6 +123,27 @@ float Engine::get_gain(int v_idx, int harmonic){
      return h_freq_gains[v_idx*num_harms + harmonic].y;
 }
 
+bool Engine::get_mute(int v_idx)
+{
+     return v_on[v_idx];
+}
+
+void Engine::get_adsr(int v_idx, float* curr_adsr)
+{
+     curr_adsr[0] = adsr[v_idx]->get_atk();
+     curr_adsr[1] = adsr[v_idx]->get_dec();
+     curr_adsr[2] = adsr[v_idx]->get_stn();
+     curr_adsr[3] = adsr[v_idx]->get_rel();
+     
+}
+
+void Engine::set_adsr(int v_idx, float* new_adsr)
+{
+     adsr[v_idx]->setAttackRate(new_adsr[0]);
+     adsr[v_idx]->setDecayRate(new_adsr[1]);
+     adsr[v_idx]->setSustainLevel(new_adsr[2]);
+     adsr[v_idx]->setReleaseRate(new_adsr[3]);
+}
 void Engine::gate_on(){
      for(int i =0 ; i < 4;i++){
           adsr[i]->gate(ON_G);
