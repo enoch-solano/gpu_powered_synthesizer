@@ -16,11 +16,12 @@ class Engine {
         float *h_v_gains;      // gain for overall voice
         float *h_buffer;
         float *h_tmp_buffer;
-        float* samples;
+        float *h_adsr;
+        float *samples;
         float *fundamental_freqs;
         float time;
 
-        SynthADSR *adsr;
+        SynthADSR *adsr[4];
         LFO *gain_lfo;
         int enable_gain_lfo;
 
@@ -59,15 +60,10 @@ class Engine {
         float get_gain(int v_idx, int harmonic);
 
         // ADSR functionality
-        void gate_on()  { adsr->gate(ON_G); }
-        void gate_off() { adsr->gate(OFF_G); }
+        void gate_on();
+        void gate_off();
         void process_adsr(void *outputBuffer);
         
-        void setAttackRate(float rate)    { adsr->setAttackRate(rate * SAMPLING_FREQUENCY); }
-        void setDecayRate(float rate)     { adsr->setDecayRate(rate * SAMPLING_FREQUENCY); }
-        void setReleaseRate(float rate)   { adsr->setReleaseRate(rate * SAMPLING_FREQUENCY); }
-        void setSustainLevel(float level) { adsr->setSustainLevel(level); }
-
         // LFO functionality
         void process_gain_lfo(void *outputBuffer, float angle);
         void set_gain_lfo_rate(float rate);

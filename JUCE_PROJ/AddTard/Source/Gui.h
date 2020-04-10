@@ -53,6 +53,8 @@ public:
     void resized() override;
     void sliderValueChanged (Slider* sliderThatWasMoved) override;
     void buttonClicked (Button* buttonThatWasClicked) override;
+    bool keyPressed(const KeyPress &k) override;
+    bool keyStateChanged(bool isKeyDown) override;
      Engine* synth = NULL;
 
 

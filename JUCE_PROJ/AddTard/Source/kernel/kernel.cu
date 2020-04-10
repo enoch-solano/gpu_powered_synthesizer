@@ -64,7 +64,7 @@ void checkCUDAError(const char *msg, int line = -1) {
 }
 
 void Additive::alloc_engine(float2* &h_freq_gains, float* &h_angles, float* &h_v_gains, float* &h_tmp_buffer,
- float* &h_buffer,int* &freq_ratios, int num_samples, int num_voices, int num_harms){
+ float* &h_buffer,float* &h_adsr, int num_samples, int num_voices, int num_harms){
 	 cudaHostAlloc((void**)&h_freq_gains, sizeof(float2)*num_harms * num_voices, cudaHostAllocMapped);
           checkCUDAError("h_freq_gains get Device Pointer", __LINE__);
           cudaHostAlloc((void**)&h_angles, sizeof(float)*num_harms*num_voices, cudaHostAllocMapped);
@@ -75,8 +75,8 @@ void Additive::alloc_engine(float2* &h_freq_gains, float* &h_angles, float* &h_v
           checkCUDAError("h_tmp_buffer get Device Pointer", __LINE__);
           cudaHostAlloc((void**)&h_buffer, sizeof(float)*num_samples, cudaHostAllocMapped);
           checkCUDAError("h_buffer get Device Pointer", __LINE__);
-          cudaHostAlloc((void**)&freq_ratios, sizeof(int)*num_voices * num_harms,cudaHostAllocMapped);
-          checkCUDAError("freq_ratios get Device Pointer", __LINE__);
+          cudaHostAlloc((void**)&h_adsr, sizeof(float)*num_voices * num_samples,cudaHostAllocMapped);
+          checkCUDAError("h_Adsrs get Device Pointer", __LINE__);
 	
 }
 
@@ -100,7 +100,7 @@ void Additive::realloc_engine(float* &h_tmp_buffer,float* &h_buffer, int prev_nu
 		      checkCUDAError("memcpy reallox buffer", __LINE__);
 
 }
-__global__ void my_vh_kernel(float *outBuffer, float2 *freq_gains, float *vgains, float angle, int numSamples, int numSinusoids, int numVoices)
+__global__ void my_vh_kernel(float *outBuffer, float2 *freq_gains, float *vgains, float* adsr, float angle, int numSamples, int numSinusoids, int numVoices)
 {
 		int idx = blockIdx.x * blockDim.x + threadIdx.x;
 
@@ -113,7 +113,7 @@ __global__ void my_vh_kernel(float *outBuffer, float2 *freq_gains, float *vgains
 
 		for (int i = 0; i < numVoices; i++) {
 			for (int j = 0; j < numHarmonics; j++) {
-					buff_val += vgains[i] * freq_gains[i*numHarmonics + j].y * __sinf(angle * freq_gains[i*numHarmonics + j].x);
+					buff_val += vgains[i] * adsr[i * idx] * freq_gains[i*numHarmonics + j].y * __sinf(angle * freq_gains[i*numHarmonics + j].x);
 					//printf("idx %d buff val: %f\n", idx, buff_val);
 			}
 		}
@@ -125,7 +125,7 @@ __global__ void my_vh_kernel(float *outBuffer, float2 *freq_gains, float *vgains
 
 void Additive::my_v_compute(float *buffer, float angle, 
 	float* h_buffer, float* h_v_gains,
-	 float2* h_freq_gains, int numSamples,
+	 float2* h_freq_gains, float* h_adsr, int numSamples,
 		int numSinusoids, int numVoices) 
 	{
 		//static int count = 0;
@@ -133,7 +133,7 @@ void Additive::my_v_compute(float *buffer, float angle,
 		//printArray(1, h_freq_gains, 0);
 		int threadsPerBlock = numSamples;
 		int blocksPerGrid = (numSamples + threadsPerBlock - 1) / threadsPerBlock;
-		float *dev_buffer, *dev_v_gains;
+		float *dev_buffer, *dev_v_gains, *dev_adsr;
 		float2* dev_freq_gains;
 		cudaHostGetDevicePointer((void**)&dev_freq_gains, (void*)h_freq_gains, 0);
 		checkCUDAError("dev_freq_gains get Device Pointer", __LINE__);
@@ -144,12 +144,12 @@ void Additive::my_v_compute(float *buffer, float angle,
 	
 		cudaHostGetDevicePointer((void**)&dev_buffer, (void*)h_buffer, 0);
 		checkCUDAError("dev_buffer get Device Pointer", __LINE__);
-		//std::cout << "numsines: " << numSinusoids <<std::endl;
-		//std::cout << "numVoices: "<< numVoices <<std::endl;
-		//std::cout << "numSamples: " << numSamples  << std::endl;
-		//std::cout << "angle: " << angle << std::endl;
-		//std::cout << "yeet"<<std::endl;
-		my_vh_kernel <<< blocksPerGrid, threadsPerBlock >>> (dev_buffer, dev_freq_gains, dev_v_gains,
+
+		cudaHostGetDevicePointer((void**)&dev_adsr, (void*)h_adsr, 0);
+		checkCUDAError("dev_freq_gains get Device Pointer", __LINE__);
+
+		
+		my_vh_kernel <<< blocksPerGrid, threadsPerBlock >>> (dev_buffer, dev_freq_gains, dev_v_gains, dev_adsr,
 										angle, numSamples, numSinusoids, numVoices);
 		checkCUDAError("vhkernel error", __LINE__);
 		cudaStreamSynchronize(NULL);

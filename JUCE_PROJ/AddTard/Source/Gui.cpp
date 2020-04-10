@@ -582,17 +582,20 @@ void Gui::sliderValueChanged (Slider* sliderThatWasMoved)
     if (sliderThatWasMoved == voice1lvl.get())
     {
         //[UserSliderCode_voice1lvl] -- add your slider handling code here..
-       
+       synth->update_voice_gain(0, voice1lvl.get()->getValue());
         //[/UserSliderCode_voice1lvl]
     }
     else if (sliderThatWasMoved == voice1freq.get())
     {
         //[UserSliderCode_voice1freq] -- add your slider handling code here..
+       
         //[/UserSliderCode_voice1freq]
     }
     else if (sliderThatWasMoved == voice2lvl.get())
     {
         //[UserSliderCode_voice2lvl] -- add your slider handling code here..
+         synth->update_voice_gain(1, voice2lvl.get()->getValue());
+
         //[/UserSliderCode_voice2lvl]
     }
     else if (sliderThatWasMoved == voice2freq.get())
@@ -603,7 +606,9 @@ void Gui::sliderValueChanged (Slider* sliderThatWasMoved)
     else if (sliderThatWasMoved == voice3lvl.get())
     {
         //[UserSliderCode_voice3lvl] -- add your slider handling code here..
-        //[/UserSliderCode_voice3lvl]
+         synth->update_voice_gain(2, voice3lvl.get()->getValue());
+       
+       //[/UserSliderCode_voice3lvl]
     }
     else if (sliderThatWasMoved == voice3freq.get())
     {
@@ -613,6 +618,7 @@ void Gui::sliderValueChanged (Slider* sliderThatWasMoved)
     else if (sliderThatWasMoved == voice4lvl.get())
     {
         //[UserSliderCode_voice4lvl] -- add your slider handling code here..
+         synth->update_voice_gain(3, voice4lvl.get()->getValue());
         //[/UserSliderCode_voice4lvl]
     }
     else if (sliderThatWasMoved == voice4freq.get())
@@ -732,13 +738,43 @@ void Gui::buttonClicked (Button* buttonThatWasClicked)
         buttonThatWasClicked->setToggleState(buttonState, 0);
         synth->toggleMute(4, (float)voice4lvl.get()->getValue());
     }
+    else if (buttonThatWasClicked == trigger.get())
+    {
+       
+    }
     //[/UserbuttonClicked_Post]
 }
 
 
 
 //[MiscUserCode] You can add your own definitions of your custom methods or any other code here...
+bool Gui::keyPressed(const KeyPress &k) 
+{
+    if (k == KeyPress::spaceKey)
+    {
+        //std::cout<<"space pressed"<<std::endl;
+    }
+}
 
+bool Gui::keyStateChanged(bool isKeyDown)
+{
+    static auto lastSpaceKeyIsDown = false;
+
+    auto newSpaceKeyIsDown = KeyPress::isKeyCurrentlyDown(KeyPress::spaceKey);
+
+    if (newSpaceKeyIsDown != lastSpaceKeyIsDown)
+    {
+        lastSpaceKeyIsDown = newSpaceKeyIsDown;
+        if(newSpaceKeyIsDown)
+        {
+            synth->gate_on();
+        }
+        else 
+        {
+            synth->gate_off();
+        }
+    }
+}
 //[/MiscUserCode]
 
 
