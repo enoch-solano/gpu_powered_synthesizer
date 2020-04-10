@@ -738,13 +738,43 @@ void Gui::buttonClicked (Button* buttonThatWasClicked)
         buttonThatWasClicked->setToggleState(buttonState, 0);
         synth->toggleMute(4, (float)voice4lvl.get()->getValue());
     }
+    else if (buttonThatWasClicked == trigger.get())
+    {
+       
+    }
     //[/UserbuttonClicked_Post]
 }
 
 
 
 //[MiscUserCode] You can add your own definitions of your custom methods or any other code here...
+bool Gui::keyPressed(const KeyPress &k) 
+{
+    if (k == KeyPress::spaceKey)
+    {
+        //std::cout<<"space pressed"<<std::endl;
+    }
+}
 
+bool Gui::keyStateChanged(bool isKeyDown)
+{
+    static auto lastSpaceKeyIsDown = false;
+
+    auto newSpaceKeyIsDown = KeyPress::isKeyCurrentlyDown(KeyPress::spaceKey);
+
+    if (newSpaceKeyIsDown != lastSpaceKeyIsDown)
+    {
+        lastSpaceKeyIsDown = newSpaceKeyIsDown;
+        if(newSpaceKeyIsDown)
+        {
+            synth->gate_on();
+        }
+        else 
+        {
+            synth->gate_off();
+        }
+    }
+}
 //[/MiscUserCode]
 
 

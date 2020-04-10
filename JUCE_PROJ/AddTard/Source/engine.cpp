@@ -7,20 +7,22 @@ Engine* Engine::engine = NULL;
 
 Engine::Engine(int num_samples) { 
           
-          adsr = new SynthADSR();
-          
+          for ( int i = 0; i < 4; i++){
+               adsr[i] = new SynthADSR();
+               adsr[i]->setAttackRate(.1 * SAMPLING_FREQUENCY);	// .1 seconds
+               adsr[i]->setDecayRate(.3 * SAMPLING_FREQUENCY);	// .3 seconds
+               adsr[i]->setReleaseRate(5 * SAMPLING_FREQUENCY);	// 5 seconds
+               adsr[i]->setSustainLevel(.5);
+          }
+       
           // initialize adsr settingsinclude cud
-          adsr->setAttackRate(.1 * SAMPLING_FREQUENCY);	// .1 seconds
-          adsr->setDecayRate(.3 * SAMPLING_FREQUENCY);	// .3 seconds
-          adsr->setReleaseRate(5 * SAMPLING_FREQUENCY);	// 5 seconds
-          adsr->setSustainLevel(.8);
           num_voices= NUM_VOICES_INIT;
           num_harms = NUM_HARMS_INIT;
           num_sinusoids= num_harms * num_voices;
           this->num_samples = num_samples;
          
           Additive::alloc_engine(h_freq_gains, h_angles,
-           h_v_gains, h_tmp_buffer, h_buffer, freq_ratios, num_samples, num_voices, num_harms);
+           h_v_gains, h_tmp_buffer, h_buffer, h_adsr, num_samples, num_voices, num_harms);
           for(int i = 0; i < num_voices; i++){
                h_v_gains[i]  = 1.0;
           }
@@ -91,6 +93,7 @@ void Engine::update_freqs(){
 }
 void Engine::update_voice_gain(int v_idx, float gain){
      h_v_gains[v_idx] = gain;
+     
 }
 
 void Engine::update_fundamental(int v_idx, float freq){
@@ -114,11 +117,15 @@ float Engine::get_gain(int v_idx, int harmonic){
 
         
 void Engine::gate_on(){
-    // adsr->gate(ON_G);
+     for(int i =0 ; i < 4;i++){
+          adsr[i]->gate(ON_G);
+     }
 }        
 
 void Engine::gate_off(){
-     //adsr->gate(OFF_G);
+      for(int i =0 ; i < 4;i++){
+          adsr[i]->gate(OFF_G);
+     }
 }
 void Engine::tick(void* outputBuffer){
      Additive::compute_sinusoid_hybrid((float*)outputBuffer, h_freq_gains, h_angles, h_v_gains, h_tmp_buffer, h_buffer,num_sinusoids, time, this->num_samples);
@@ -128,8 +135,11 @@ void Engine::tick(void* outputBuffer){
 
 void Engine::simple_tick(void *outputBuffer, int num_Samples){
     // std::cout<< "tick" <<std::endl;
+    for(int i = 0; i < 4; i++){
+         adsr[i]->process_SynthADSR(this->num_samples, &h_adsr[i * this->num_samples]);
+    }
      Additive::my_v_compute((float*)outputBuffer, angle, 
-     h_buffer,h_v_gains, h_freq_gains, this->num_samples, num_sinusoids, num_voices);
+     h_buffer,h_v_gains, h_freq_gains, h_adsr, this->num_samples, num_sinusoids, num_voices);
  //std::cout << "angle ion engine b4 add" << angle <<std::endl;
      // float a = 2.0f * 3.14f;
      // float b = a * this->num_samples;

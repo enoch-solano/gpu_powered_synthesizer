@@ -15,11 +15,12 @@ class Engine {
          float *h_v_gains;      // gain for overall voice
          float *h_buffer;
          float *h_tmp_buffer;
-         float* samples;
+         float *h_adsr;
+         float *samples;
          float *fundamental_freqs;
          float time;
 
-	SynthADSR *adsr;
+	    SynthADSR *adsr[4];
        
          int *freq_ratios;
          int num_samples;
