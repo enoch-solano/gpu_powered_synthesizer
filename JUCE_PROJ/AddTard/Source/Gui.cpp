@@ -636,7 +636,7 @@ void Gui::sliderValueChanged (Slider* sliderThatWasMoved)
     else if (sliderThatWasMoved == lfoAmt.get())
     {
         //[UserSliderCode_lfoAmt] -- add your slider handling code here..
-        synth->set_gain_lfo_level(lfoAmt.get()->getValue() / 5.f);
+        synth->set_gain_lfo_level(lfoAmt.get()->getValue() / 10.f);
         //[/UserSliderCode_lfoAmt]
     }
     else if (sliderThatWasMoved == lfoShape.get())

@@ -194,24 +194,28 @@ void Engine::tick(void* outputBuffer){
 
 void Engine::simple_tick(void *outputBuffer, int num_Samples){
     // std::cout<< "tick" <<std::endl;
-    for(int i = 0; i < 4; i++){
+    for (int i = 0; i < 4; i++) {
          adsr[i]->process_SynthADSR(this->num_samples, &h_adsr[i * this->num_samples]);
     }
-     Additive::my_v_compute((float*)outputBuffer, angle, 
-     h_buffer,h_v_gains, h_freq_gains, h_adsr, this->num_samples, num_sinusoids, num_voices);
- //std::cout << "angle ion engine b4 add" << angle <<std::endl;
-     // float a = 2.0f * 3.14f;
-     // float b = a * this->num_samples;
-     // float c = b * 1260.f;
-     // float d = c / 44100.f;
-     //std::cout << this->num_samples << std::endl;
-     // std::cout << a<< std::endl;
-     // std::cout << b<< std::endl;
-     // std::cout << c<< std::endl;
-     // std::cout << d<< std::endl;
-     process_gain_lfo((float*) outputBuffer, angle);
-     angle += MathConstants<float>::twoPi * this->num_samples  / 44100.f;
-     //std::cout << "angle ion engine" << angle <<std::endl;
-     //angle = fmod(angle,MathConstants<float>::twoPi);
+
+    Additive::my_v_compute((float*)outputBuffer, angle, h_buffer,h_v_gains, h_freq_gains, 
+                            h_adsr, this->num_samples, num_sinusoids, num_voices);
+ 
+    //std::cout << "angle ion engine b4 add" << angle <<std::endl;
+    // float a = 2.0f * 3.14f;
+    // float b = a * this->num_samples;
+    // float c = b * 1260.f;
+    // float d = c / 44100.f;
+    //std::cout << this->num_samples << std::endl;
+    // std::cout << a<< std::endl;
+    // std::cout << b<< std::endl;
+    // std::cout << c<< std::endl;
+    // std::cout << d<< std::endl;
+    
+    process_gain_lfo((float*) outputBuffer, angle);
+    angle += MathConstants<float>::twoPi * this->num_samples  / 44100.f;
+    
+    //std::cout << "angle ion engine" << angle <<std::endl;
+    //angle = fmod(angle,MathConstants<float>::twoPi);
 }
 
