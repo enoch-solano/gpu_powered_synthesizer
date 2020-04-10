@@ -8,8 +8,8 @@ Engine* Engine::engine = NULL;
 Engine::Engine(int num_samples) { 
 
     gain_lfo = new LFO();
-    gain_lfo->set_level(1.f);
-    gain_lfo->set_rate(10.f);
+    gain_lfo->set_level(0.f);
+    gain_lfo->set_rate(0.f);
     enable_gain_lfo = 1;
           
     for ( int i = 0; i < 4; i++){
