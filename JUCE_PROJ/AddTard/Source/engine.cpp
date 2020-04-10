@@ -150,7 +150,10 @@ void Engine::set_gain_lfo_level(float level) {
     gain_lfo->set_level(level);
 }
 
-void Engine::set_gain_lfo_type(int type) {
+void Engine::set_gain_lfo_type(float knob_val, float max_val) {
+    float val = (knob_val / max_val) * NUM_LFO_WAVES;
+
+
     gain_lfo->set_type(type);
 }
 

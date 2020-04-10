@@ -68,7 +68,7 @@ class Engine {
         void process_gain_lfo(void *outputBuffer, float angle);
         void set_gain_lfo_rate(float rate);
         void set_gain_lfo_level(float level);
-        void set_gain_lfo_type(int type);
+        void set_gain_lfo_type(float knob_val, float max_val);
 
         void toggle_gain_lfo();
 };
