@@ -31,7 +31,7 @@ add_subdirectory(Source/kernel)
 set(AddTard_jucer_FILE
   "${CMAKE_CURRENT_LIST_DIR}/AddTard.jucer"
 )
-#target_link_libraries(${PROJECT_NAME} kernel)
+
 link_directories(${CUDA_TOOLKIT_ROOT_DIR}/include)
 link_directories(${CUDA_TOOLKIT_ROOT_DIR}/lib64)
 set(JUCE_MODULES_GLOBAL_PATH "/home/davis/JUCE/modules")
@@ -64,6 +64,8 @@ jucer_project_files("AddTard/Source"
   x         .         .         "Source/engine.h"
   x         .         .         "Source/Gui.cpp"
   x         .         .         "Source/Gui.h"
+  x         .         .         "Source/SynthADSR.h"
+  x         .         .         "Source/SynthADSR.cpp"
 
 )
 
