@@ -27,6 +27,7 @@ Engine::Engine(int num_samples) {
           load_square_wave(0, 440);
           load_sawtooth(1,440);
           load_sinewave(2,440);
+          
 }      
 
 void Engine::realloc_engine(int num_samples){
@@ -64,17 +65,16 @@ void Engine::load_sawtooth(int v_idx, int f) {
      update_fundamental(v_idx, f);
      for (int i = 0; i < num_harms; i++) {
           h_freq_gains[v_idx*num_harms + i].y = (-1.f / (_PI * (i + 1)));
-          //h_freq_gains[v_idx*num_harms + i].x = (i * _PI / L) * f;
      }
 }
 void Engine::load_square_wave(int v_idx, int f) {
-      //update_fundamental(v_idx, f);
-     for (int i = 0; i < num_harms; i++) {
-          h_freq_gains[v_idx*num_harms + i].y = 1.f / (1.f + (2 * i)); //gain
-          h_freq_gains[v_idx*num_harms + i].x = (1.f + (2 * i)) * f;   //freq
-          //freq_ratios[v_idx*num_harms +i] = (1 + (2 * i));
+     update_fundamental(v_idx, f);
+     for (int i = 0; i < num_harms; i+=2) {
+          h_freq_gains[v_idx*num_harms + i].y = 1.f / (1.f + (i)); //gain
+          
      }
 }
+
 
 void Engine::load_sinewave(int v_idx, int f) {
           h_freq_gains[v_idx*num_harms].y = 1.0; //gain
@@ -121,7 +121,6 @@ void Engine::gate_off(){
      //adsr->gate(OFF_G);
 }
 void Engine::tick(void* outputBuffer){
-     //Additive::update_freqs(freq_gains, freq_ratios, num_voices, num_harms, fundamental_freqs)
      Additive::compute_sinusoid_hybrid((float*)outputBuffer, h_freq_gains, h_angles, h_v_gains, h_tmp_buffer, h_buffer,num_sinusoids, time, this->num_samples);
      time += NUM_SAMPLES / 44100.f;
      

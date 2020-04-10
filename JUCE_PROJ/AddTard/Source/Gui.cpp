@@ -21,6 +21,7 @@
 //[/Headers]
 
 #include "Gui.h"
+#include "Display.h"
 
 
 //[MiscUserDefs] You can add your own user definitions and misc code here...
@@ -31,12 +32,21 @@
 Gui::Gui ()
 {
     //[Constructor_pre] You can add your own custom stuff here..
-    
+
+    auto midiDevices = MidiInput::getAvailableDevices();
+    for (int i = 0; i < midiDevices.size(); i++ )
+    {
+        std::cout<<midiDevices[i].name<<std::endl;
+    }
+
+    display.reset(new Display());
+    addAndMakeVisible(display.get());
+    display->setCurrVoice(0);
+    display->updateSliders();
     //path creation for all drawable buttons
     Path path;
     Rectangle<float> area (47, 48);
     path.addRectangle(area);
-
 
     //Instatiate select buttons
     voice1Select.reset (new DrawableButton ("Voice 1 Selection", DrawableButton::ImageRaw));
@@ -88,19 +98,6 @@ Gui::Gui ()
     voiceButtons.push_back(voice3Select.get());
     voiceButtons.push_back(voice4Select.get());
 
-    
-    //trigger button 
-    trigger.reset(new DrawableButton ("Trigger", DrawableButton::ImageRaw));
-    addAndMakeVisible(trigger.get());
-    DrawablePath onTrig, offTrig;
-    onTrig.setPath(path);
-    onTrig.setFill(static_cast<Colour>(0xffc0bebe));
-    offTrig.setPath(path);
-    offTrig.setFill(static_cast<Colour> (0xff6d6d6d));
-    trigger->setImages(&offTrig, &offTrig, &onTrig);
-    trigger->addListener(this);
-    
-    //Mute Buttons
 
     voice1Mute.reset(new DrawableButton ("Voice 1 mute", DrawableButton::ImageRaw));
     addAndMakeVisible(voice1Mute.get());
@@ -142,30 +139,7 @@ Gui::Gui ()
     voice4Mute->setImages(&offMute4, &offMute4, &onMute4, nullptr, &onMute4, &onMute4, &offMute4, nullptr);
     voice4Mute->addListener(this);
 
-    //Menu
-    menu.reset(new GroupComponent ("", TRANS("")));
-    addAndMakeVisible(menu.get());
-    menu->setColour(GroupComponent::outlineColourId, Colour (0xffcbdc3b));
 
-    home.reset(new TextButton ("Home"));
-    addAndMakeVisible(home.get());
-    home->setButtonText("Home");
-    home->addListener(this);
-    home->setColour(TextButton::buttonColourId, Colour (0x00181f22));
-    home->setColour(TextButton::buttonOnColourId, Colour (0x00181f22));
-    home->setColour(TextButton::textColourOnId, Colour (0xffcbdc3b));
-    home->setColour(TextButton::textColourOffId, Colour (0xffcbdc3b));
-    home->changeWidthToFitText(24);
-
-    settings.reset(new TextButton("Settings"));
-    addAndMakeVisible(settings.get());
-    settings->setButtonText("Settings");
-    settings->addListener(this);
-    settings->setColour(TextButton::buttonColourId, Colour (0x00181f22));
-    settings->setColour(TextButton::buttonOnColourId, Colour (0x00181f22));
-    settings->setColour(TextButton::textColourOnId, Colour (0xffcbdc3b));
-    settings->setColour(TextButton::textColourOffId, Colour (0xffcbdc3b));
-    settings->changeWidthToFitText(24);
 
 
 
@@ -194,7 +168,7 @@ Gui::Gui ()
 
     voice1lvl.reset (new Slider ("Voice 1 Level"));
     addAndMakeVisible (voice1lvl.get());
-    voice1lvl->setRange (0, 1.0, 0);
+    voice1lvl->setRange (0, 10, 0);
     voice1lvl->setSliderStyle (Slider::RotaryHorizontalVerticalDrag);
     voice1lvl->setTextBoxStyle (Slider::NoTextBox, false, 80, 20);
     voice1lvl->addListener (this);
@@ -215,7 +189,7 @@ Gui::Gui ()
 
     voice2lvl.reset (new Slider ("Voice 2 Level"));
     addAndMakeVisible (voice2lvl.get());
-    voice2lvl->setRange (0, 1.0, 0);
+    voice2lvl->setRange (0, 10, 0);
     voice2lvl->setSliderStyle (Slider::RotaryHorizontalVerticalDrag);
     voice2lvl->setTextBoxStyle (Slider::NoTextBox, false, 80, 20);
     voice2lvl->setColour (Slider::thumbColourId, Colour (0xffc87c42));
@@ -238,7 +212,7 @@ Gui::Gui ()
 
     voice3lvl.reset (new Slider ("Voice 3 level"));
     addAndMakeVisible (voice3lvl.get());
-    voice3lvl->setRange (0, 1.0, 0);
+    voice3lvl->setRange (0, 10, 0);
     voice3lvl->setSliderStyle (Slider::RotaryHorizontalVerticalDrag);
     voice3lvl->setTextBoxStyle (Slider::NoTextBox, false, 80, 20);
     voice3lvl->setColour (Slider::thumbColourId, Colour (0xff02c86a));
@@ -261,7 +235,7 @@ Gui::Gui ()
 
     voice4lvl.reset (new Slider ("Voice 4 level"));
     addAndMakeVisible (voice4lvl.get());
-    voice4lvl->setRange (0.0, 1, 0);
+    voice4lvl->setRange (0.5, 10, 0.5);
     voice4lvl->setSliderStyle (Slider::RotaryHorizontalVerticalDrag);
     voice4lvl->setTextBoxStyle (Slider::NoTextBox, false, 80, 20);
     voice4lvl->setColour (Slider::thumbColourId, Colour (0xffc453b1));
@@ -375,16 +349,12 @@ Gui::Gui ()
     addAndMakeVisible (textButton.get());
     textButton->setButtonText (String());
     textButton->addListener (this);
-    textButton->setColour (TextButton::buttonColourId, Colour (0x00000000));
-    textButton->setColour (TextButton::buttonOnColourId, Colour (0x00181f22));
-    textButton->setColour (TextButton::textColourOffId, Colour (0x00ffffff));
-    textButton->setColour (TextButton::textColourOnId, Colour (0x00ffffff));
+    textButton->setColour (TextButton::buttonColourId, Colour (0x00a45c94));
 
     textButton->setBounds (696, 48, 150, 24);
 
 
     //[UserPreSize]
-    textButton->setVisible(false);
     //[/UserPreSize]
 
     setSize (1600, 900);
@@ -437,9 +407,8 @@ Gui::~Gui()
     voice2Mute = nullptr;
     voice3Mute = nullptr;
     voice4Mute = nullptr;
-    trigger = nullptr;
-    
 
+    display = nullptr;
 
     //[/Destructor]
 }
@@ -568,9 +537,7 @@ void Gui::resized()
     voice2Mute->setBounds(proportionOfWidth (0.0321f), proportionOfHeight (0.2113f), 47, 48);
     voice3Mute->setBounds(proportionOfWidth (0.0321f), proportionOfHeight (0.3388f), 47, 48);
     voice4Mute->setBounds(proportionOfWidth (0.0321f), proportionOfHeight (0.4674f), 47, 48);
-    trigger->setBounds(800, proportionOfHeight (0.4678f), 47, 48);
-    home->setBounds(800-home->getWidth()-10, 48, home->getWidth(), home->getHeight());
-    settings->setBounds(800+settings->getWidth()+10, 48, settings->getWidth(), settings->getHeight());
+    display->setBounds(800-280, 80, 600, 400);
     //[/UserResized]
 }
 
@@ -582,7 +549,6 @@ void Gui::sliderValueChanged (Slider* sliderThatWasMoved)
     if (sliderThatWasMoved == voice1lvl.get())
     {
         //[UserSliderCode_voice1lvl] -- add your slider handling code here..
-       
         //[/UserSliderCode_voice1lvl]
     }
     else if (sliderThatWasMoved == voice1freq.get())
@@ -694,6 +660,8 @@ void Gui::buttonClicked (Button* buttonThatWasClicked)
 
             buttonState = !buttonState;
             buttonThatWasClicked->setToggleState(buttonState, 0);
+            display->setCurrVoice(i);
+            display->updateSliders();
         }
     }
     //[/UserbuttonClicked_Pre]
@@ -701,6 +669,13 @@ void Gui::buttonClicked (Button* buttonThatWasClicked)
     if (buttonThatWasClicked == textButton.get())
     {
         //[UserButtonCode_textButton] -- add your button handler code here..
+        auto midiList = MidiInput::getAvailableDevices();
+        if (!midiList.isEmpty()) {
+            std::cout<<"There is a midi Device Connected"<<std::endl;
+        }
+        else {
+            std::cout<<"no midi devices"<<std::endl;
+        }
         //[/UserButtonCode_textButton]
     }
 
@@ -894,9 +869,8 @@ BEGIN_JUCER_METADATA
           textBoxPos="NoTextBox" textBoxEditable="0" textBoxWidth="80"
           textBoxHeight="20" skewFactor="1.0" needsCallback="1"/>
   <TEXTBUTTON name="new button" id="201043ba634662c0" memberName="textButton"
-              virtualName="" explicitFocusOrder="0" pos="696 48 150 24" bgColOff="0"
-              bgColOn="181f22" textCol="ffffff" textColOn="ffffff" buttonText=""
-              connectedEdges="0" needsCallback="1" radioGroupId="0"/>
+              virtualName="" explicitFocusOrder="0" pos="696 48 150 24" bgColOff="a45c94"
+              buttonText="" connectedEdges="0" needsCallback="1" radioGroupId="0"/>
 </JUCER_COMPONENT>
 
 END_JUCER_METADATA

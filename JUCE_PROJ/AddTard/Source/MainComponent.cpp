@@ -70,7 +70,7 @@ MainComponent::MainComponent()
         guiPtr.reset(new Gui());
         addAndMakeVisible(guiPtr.get());
         guiPtr.get()->synth = Engine::getInstance();
-        setSize (500, 600);
+        setSize (1600, 900);
 }
 
 

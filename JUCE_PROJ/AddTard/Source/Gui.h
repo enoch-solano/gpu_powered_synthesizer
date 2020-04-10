@@ -21,6 +21,7 @@
 
 //[Headers]     -- You can add your own extra header files here --
 #include <JuceHeader.h>
+#include "Display.h"
 #include "engine.h"
 //#include <juce_Drawable.h>
 //#include <juce_DrawableButton.h>
@@ -53,13 +54,15 @@ public:
     void resized() override;
     void sliderValueChanged (Slider* sliderThatWasMoved) override;
     void buttonClicked (Button* buttonThatWasClicked) override;
-     Engine* synth = NULL;
+      Engine* synth = NULL;
+
+    enum voiceColors {v1On = 0xff42a2c8, v2On = 0xffc87c42, v3On = 0xff02c86a, v4On = 0xffc453b1,
+                      v1Off = 0xff36677a, v2Off = 0xff7e6447, v3Off = 0xff346d52, v4Off = 0xff6f3966};
 
 
 private:
     //[UserVariables]   -- You can add your own custom variables in this section.
-    enum voiceColors {v1On = 0xff42a2c8, v2On = 0xffc87c42, v3On = 0xff02c86a, v4On = 0xffc453b1,
-                        v1Off = 0xff36677a, v2Off = 0xff7e6447, v3Off = 0xff346d52, v4Off = 0xff6f3966};
+
     std::unique_ptr<DrawableButton> voice1Select;
     std::unique_ptr<DrawableButton> voice2Select;
     std::unique_ptr<DrawableButton> voice3Select;
@@ -70,17 +73,7 @@ private:
     std::unique_ptr<DrawableButton> voice4Mute;
     std::vector<DrawableButton*> voiceButtons {};
 
-    //Testing button
-    std::unique_ptr<DrawableButton> trigger;
-
-    //menu things
-    std::unique_ptr<GroupComponent> menu;
-    std::unique_ptr<TextButton> home;
-    std::unique_ptr<TextButton> settings;
-    std::vector<TextButton*> menuButtons {};
-   
-
-
+    std::unique_ptr<Display> display;
 
 
 

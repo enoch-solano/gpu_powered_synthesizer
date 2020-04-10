@@ -33,6 +33,7 @@ class Engine {
          Engine(Engine const&){};
          Engine& operator=(Engine const&){};
          void update_freqs();
+      
          void realloc_engine(int num_samples);
     public: 
     void update_fundamental(int v_idx, float freq);
