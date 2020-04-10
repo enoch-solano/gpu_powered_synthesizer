@@ -113,8 +113,7 @@ __global__ void my_vh_kernel(float *outBuffer, float2 *freq_gains, float *vgains
 
 		for (int i = 0; i < numVoices; i++) {
 			for (int j = 0; j < numHarmonics; j++) {
-				float gain = vgains[i] * adsr[i * idx] * freq_gains[i*numHarmonics + j].y;
-				buff_val += gain * (__sinf(angle * freq_gains[i*numHarmonics + j].x) + 0.5f);
+				buff_val += vgains[i] * adsr[i * idx] * freq_gains[i*numHarmonics + j].y * __sinf(angle * freq_gains[i*numHarmonics + j].x);
 				//printf("idx %d buff val: %f\n", idx, buff_val);
 			}
 		}
