@@ -92,7 +92,7 @@ inline float SynthADSR::process() {
 	case env_decay:
 		output = decayBase + output * decayCoef;
 		if (output <= sustainLevel) {
-			output = sustainLevel;
+			output = sustainLevel; 
 			state = env_sustain;
 		}
 		break;

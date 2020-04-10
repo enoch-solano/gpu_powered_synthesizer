@@ -102,9 +102,9 @@ void Additive::realloc_engine(float* &h_tmp_buffer,float* &h_buffer, int prev_nu
 }
 __global__ void my_vh_kernel(float *outBuffer, float2 *freq_gains, float *vgains, float* adsr, float angle, int numSamples, int numSinusoids, int numVoices)
 {
-		int idx = blockIdx.x * blockDim.x + threadIdx.x;
+	int idx = blockIdx.x * blockDim.x + threadIdx.x;
 
-		if (idx < numSamples) {
+	if (idx < numSamples) {
 		// samples sine wave in discrete steps
 		angle = angle + 2.f * M_PI * idx / 44100.f;
 		
@@ -113,14 +113,14 @@ __global__ void my_vh_kernel(float *outBuffer, float2 *freq_gains, float *vgains
 
 		for (int i = 0; i < numVoices; i++) {
 			for (int j = 0; j < numHarmonics; j++) {
-					buff_val += vgains[i] * adsr[i * idx] * freq_gains[i*numHarmonics + j].y * __sinf(angle * freq_gains[i*numHarmonics + j].x);
-					//printf("idx %d buff val: %f\n", idx, buff_val);
+				buff_val += vgains[i] * adsr[i * idx] * freq_gains[i*numHarmonics + j].y * __sinf(angle * freq_gains[i*numHarmonics + j].x);
+				//printf("idx %d buff val: %f\n", idx, buff_val);
 			}
 		}
 
 		// buffer to be sent to DAC
 		outBuffer[idx] = buff_val;
-		}
+	}
 }
 
 void Additive::my_v_compute(float *buffer, float angle, 
