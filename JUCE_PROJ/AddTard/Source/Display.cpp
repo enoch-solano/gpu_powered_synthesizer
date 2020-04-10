@@ -30,7 +30,7 @@
 //==============================================================================
 Display::Display ()
 {
-    currVoice = 0;
+    currVoice = 0.0;
     for (int i = 0; i < 32; i++)
     {
         std::string name = "Harmonic ";
