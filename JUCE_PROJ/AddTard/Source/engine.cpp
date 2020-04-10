@@ -175,8 +175,8 @@ void Engine::set_gain_lfo_level(float level) {
 
 void Engine::set_gain_lfo_type(float knob_val, float max_val) {
     float val = (knob_val / max_val) * NUM_LFO_WAVES;
-
-
+    val = std::floor(std::max(0.f, val - 0.01f));
+    int type = int(val);
     gain_lfo->set_type(type);
 }
 

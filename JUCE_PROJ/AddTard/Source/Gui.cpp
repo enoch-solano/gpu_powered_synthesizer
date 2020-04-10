@@ -630,19 +630,19 @@ void Gui::sliderValueChanged (Slider* sliderThatWasMoved)
     else if (sliderThatWasMoved == lfoRate.get())
     {
         //[UserSliderCode_lfoRate] -- add your slider handling code here..
-        synth->set_gain_lfo_rate(lfoRate.get()->getValue() * 2.f)
+        synth->set_gain_lfo_rate(lfoRate.get()->getValue() * 2.f);
         //[/UserSliderCode_lfoRate]
     }
     else if (sliderThatWasMoved == lfoAmt.get())
     {
         //[UserSliderCode_lfoAmt] -- add your slider handling code here..
-        synth->set_gain_lfo_level(lfoRate.get()->getValue() / 10.f)
+        synth->set_gain_lfo_level(lfoAmt.get()->getValue() / 10.f);
         //[/UserSliderCode_lfoAmt]
     }
     else if (sliderThatWasMoved == lfoShape.get())
     {
         //[UserSliderCode_lfoShape] -- add your slider handling code here..
-        synth->set_gain_lfo_type(lfoRate.get()->getValue(), 10.f)
+        synth->set_gain_lfo_type(lfoShape.get()->getValue(), 10.f);
         //[/UserSliderCode_lfoShape]
     }
     else if (sliderThatWasMoved == fltrType.get())
