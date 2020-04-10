@@ -139,12 +139,6 @@ Gui::Gui ()
     voice4Mute->setImages(&offMute4, &offMute4, &onMute4, nullptr, &onMute4, &onMute4, &offMute4, nullptr);
     voice4Mute->addListener(this);
 
-
-
-
-
-
-
     //[/Constructor_pre]
 
     groupComponent5.reset (new GroupComponent ("new group",
@@ -165,20 +159,78 @@ Gui::Gui ()
     groupComponent->setExplicitFocusOrder (1);
     groupComponent->setTextLabelPosition (Justification::centred);
     groupComponent->setColour (GroupComponent::outlineColourId, Colour (0xff36677a));
+    
+    //Level sliders
 
-    voice1lvl.reset (new Slider ("Voice 1 Level"));
+    voice1lvl.reset (new DecibelSlider ("Voice 1 Level"));
     addAndMakeVisible (voice1lvl.get());
-    voice1lvl->setRange (0, 10, 0);
+    voice1lvl->setRange (-100, 0, 0);
     voice1lvl->setSliderStyle (Slider::RotaryHorizontalVerticalDrag);
-    voice1lvl->setTextBoxStyle (Slider::NoTextBox, false, 80, 20);
+    voice1lvl->setTextBoxStyle (Slider::TextBoxBelow, false, 80, 12);
     voice1lvl->addListener (this);
+
+    voice2lvl.reset (new DecibelSlider ("Voice 2 Level"));
+    addAndMakeVisible (voice2lvl.get());
+    voice2lvl->setRange (-100, 0, 0);
+    voice2lvl->setSliderStyle (Slider::RotaryHorizontalVerticalDrag);
+    voice2lvl->setTextBoxStyle (Slider::TextBoxBelow, false, 80, 12);
+    voice2lvl->setColour (Slider::thumbColourId, Colour (0xffc87c42));
+    voice2lvl->addListener (this);
+
+    voice3lvl.reset (new DecibelSlider ("Voice 3 level"));
+    addAndMakeVisible (voice3lvl.get());
+    voice3lvl->setRange (-100, 0, 0);
+    voice3lvl->setSliderStyle (Slider::RotaryHorizontalVerticalDrag);
+    voice3lvl->setTextBoxStyle (Slider::TextBoxBelow, false, 80, 12);
+    voice3lvl->setColour (Slider::thumbColourId, Colour (0xff02c86a));
+    voice3lvl->addListener (this);
+
+    voice4lvl.reset (new DecibelSlider ("Voice 4 level"));
+    addAndMakeVisible (voice4lvl.get());
+    voice4lvl->setRange (-100, 0, 0);
+    voice4lvl->setSliderStyle (Slider::RotaryHorizontalVerticalDrag);
+    voice4lvl->setTextBoxStyle (Slider::TextBoxBelow, false, 80, 12);
+    voice4lvl->setColour (Slider::thumbColourId, Colour (0xffc453b1));
+    voice4lvl->addListener (this);
+
+    //Freq. Sliders
 
     voice1freq.reset (new Slider ("Voice 1 Freq"));
     addAndMakeVisible (voice1freq.get());
-    voice1freq->setRange (0, 10, 0);
+    voice1freq->setRange (0, 20000, 0);
+    voice1freq->setSkewFactorFromMidPoint(500);
     voice1freq->setSliderStyle (Slider::RotaryHorizontalVerticalDrag);
-    voice1freq->setTextBoxStyle (Slider::NoTextBox, false, 80, 20);
+    voice1freq->setTextBoxStyle (Slider::TextBoxBelow, false, 80, 12);
     voice1freq->addListener (this);
+
+    voice2freq.reset (new Slider ("Voice 2 Freq"));
+    addAndMakeVisible (voice2freq.get());
+    voice2freq->setRange (0, 20000, 0);
+    voice2freq->setSkewFactorFromMidPoint(500);
+    voice2freq->setSliderStyle (Slider::RotaryHorizontalVerticalDrag);
+    voice2freq->setTextBoxStyle (Slider::TextBoxBelow, false, 80, 12);
+    voice2freq->setColour (Slider::thumbColourId, Colour (0xffc87c42));
+    voice2freq->addListener (this);
+
+    voice3freq.reset (new Slider ("Voice 3 Freq"));
+    addAndMakeVisible (voice3freq.get());
+    voice3freq->setRange (0, 20000, 0);
+    voice3freq->setSkewFactorFromMidPoint(500);
+    voice3freq->setSliderStyle (Slider::RotaryHorizontalVerticalDrag);
+    voice3freq->setTextBoxStyle (Slider::TextBoxBelow, false, 80, 12);
+    voice3freq->setColour (Slider::thumbColourId, Colour (0xff02c86a));
+    voice3freq->addListener (this);
+
+    voice4freq.reset (new Slider ("Voice 4 Freq"));
+    addAndMakeVisible (voice4freq.get());
+    voice4freq->setRange (0, 20000, 0);
+    voice4freq->setSkewFactorFromMidPoint(500);
+    voice4freq->setSliderStyle (Slider::RotaryHorizontalVerticalDrag);
+    voice4freq->setTextBoxStyle (Slider::TextBoxBelow, false, 80, 12);
+    voice4freq->setColour (Slider::thumbColourId, Colour (0xffc453b1));
+    voice4freq->addListener (this);
+
+    //Voice groups 
 
     groupComponent2.reset (new GroupComponent ("Voice 1",
                                                TRANS("Voice 2")));
@@ -187,44 +239,12 @@ Gui::Gui ()
     groupComponent2->setTextLabelPosition (Justification::centred);
     groupComponent2->setColour (GroupComponent::outlineColourId, Colour (0xff7e643b));
 
-    voice2lvl.reset (new Slider ("Voice 2 Level"));
-    addAndMakeVisible (voice2lvl.get());
-    voice2lvl->setRange (0, 10, 0);
-    voice2lvl->setSliderStyle (Slider::RotaryHorizontalVerticalDrag);
-    voice2lvl->setTextBoxStyle (Slider::NoTextBox, false, 80, 20);
-    voice2lvl->setColour (Slider::thumbColourId, Colour (0xffc87c42));
-    voice2lvl->addListener (this);
-
-    voice2freq.reset (new Slider ("Voice 2 Freq"));
-    addAndMakeVisible (voice2freq.get());
-    voice2freq->setRange (0, 10, 0);
-    voice2freq->setSliderStyle (Slider::RotaryHorizontalVerticalDrag);
-    voice2freq->setTextBoxStyle (Slider::NoTextBox, false, 80, 20);
-    voice2freq->setColour (Slider::thumbColourId, Colour (0xffc87c42));
-    voice2freq->addListener (this);
-
     groupComponent3.reset (new GroupComponent ("Voice 3",
                                                TRANS("Voice 3")));
     addAndMakeVisible (groupComponent3.get());
     groupComponent3->setExplicitFocusOrder (1);
     groupComponent3->setTextLabelPosition (Justification::centred);
     groupComponent3->setColour (GroupComponent::outlineColourId, Colour (0xff346d52));
-
-    voice3lvl.reset (new Slider ("Voice 3 level"));
-    addAndMakeVisible (voice3lvl.get());
-    voice3lvl->setRange (0, 10, 0);
-    voice3lvl->setSliderStyle (Slider::RotaryHorizontalVerticalDrag);
-    voice3lvl->setTextBoxStyle (Slider::NoTextBox, false, 80, 20);
-    voice3lvl->setColour (Slider::thumbColourId, Colour (0xff02c86a));
-    voice3lvl->addListener (this);
-
-    voice3freq.reset (new Slider ("Voice 3 Freq"));
-    addAndMakeVisible (voice3freq.get());
-    voice3freq->setRange (0, 10, 0);
-    voice3freq->setSliderStyle (Slider::RotaryHorizontalVerticalDrag);
-    voice3freq->setTextBoxStyle (Slider::NoTextBox, false, 80, 20);
-    voice3freq->setColour (Slider::thumbColourId, Colour (0xff02c86a));
-    voice3freq->addListener (this);
 
     groupComponent4.reset (new GroupComponent ("Voice 4",
                                                TRANS("Voice 4")));
@@ -233,21 +253,7 @@ Gui::Gui ()
     groupComponent4->setTextLabelPosition (Justification::centred);
     groupComponent4->setColour (GroupComponent::outlineColourId, Colour (0xff6f3966));
 
-    voice4lvl.reset (new Slider ("Voice 4 level"));
-    addAndMakeVisible (voice4lvl.get());
-    voice4lvl->setRange (0.0, 1, 0);
-    voice4lvl->setSliderStyle (Slider::RotaryHorizontalVerticalDrag);
-    voice4lvl->setTextBoxStyle (Slider::NoTextBox, false, 80, 20);
-    voice4lvl->setColour (Slider::thumbColourId, Colour (0xffc453b1));
-    voice4lvl->addListener (this);
-
-    voice4freq.reset (new Slider ("Voice 4 Freq"));
-    addAndMakeVisible (voice4freq.get());
-    voice4freq->setRange (10, 1000, 0);
-    voice4freq->setSliderStyle (Slider::RotaryHorizontalVerticalDrag);
-    voice4freq->setTextBoxStyle (Slider::NoTextBox, false, 80, 20);
-    voice4freq->setColour (Slider::thumbColourId, Colour (0xffc453b1));
-    voice4freq->addListener (this);
+    //ADSR Sliders
 
     atk.reset (new Slider ("Attack"));
     addAndMakeVisible (atk.get());
@@ -281,27 +287,36 @@ Gui::Gui ()
     rel->setColour (Slider::thumbColourId, Colour (0xffcbdc3b));
     rel->addListener (this);
 
+    adsrSliders.push_back(atk.get());
+    adsrSliders.push_back(dec.get());
+    adsrSliders.push_back(sus.get());
+    adsrSliders.push_back(rel.get());
+
+    
+
+    //LFO tings
+
     lfoRate.reset (new Slider ("LFO Rate"));
     addAndMakeVisible (lfoRate.get());
     lfoRate->setRange (0, 10, 0);
     lfoRate->setSliderStyle (Slider::RotaryHorizontalVerticalDrag);
-    lfoRate->setTextBoxStyle (Slider::NoTextBox, true, 80, 20);
+    lfoRate->setTextBoxStyle (Slider::TextBoxBelow, true, 80, 12);
     lfoRate->setColour (Slider::thumbColourId, Colour (0xffcbdc3b));
     lfoRate->addListener (this);
 
     lfoAmt.reset (new Slider ("LFO Amount"));
     addAndMakeVisible (lfoAmt.get());
-    lfoAmt->setRange (0, 10, 0);
+    lfoAmt->setRange (0, 1, 0);
     lfoAmt->setSliderStyle (Slider::RotaryHorizontalVerticalDrag);
-    lfoAmt->setTextBoxStyle (Slider::NoTextBox, true, 80, 20);
+    lfoAmt->setTextBoxStyle (Slider::TextBoxBelow, true, 80, 12);
     lfoAmt->setColour (Slider::thumbColourId, Colour (0xffcbdc3b));
     lfoAmt->addListener (this);
 
     lfoShape.reset (new Slider ("LFO Waveform Type"));
     addAndMakeVisible (lfoShape.get());
-    lfoShape->setRange (0, 10, 0);
+    lfoShape->setRange (0, 3, 4);
     lfoShape->setSliderStyle (Slider::RotaryHorizontalVerticalDrag);
-    lfoShape->setTextBoxStyle (Slider::NoTextBox, true, 80, 20);
+    lfoShape->setTextBoxStyle (Slider::TextBoxBelow, true, 80, 12);
     lfoShape->setColour (Slider::thumbColourId, Colour (0xffcbdc3b));
     lfoShape->addListener (this);
 
@@ -353,10 +368,7 @@ Gui::Gui ()
 
     textButton->setBounds (696, 48, 150, 24);
 
-    adsrSliders.push_back(atk.get());
-    adsrSliders.push_back(dec.get());
-    adsrSliders.push_back(sus.get());
-    adsrSliders.push_back(rel.get());
+
 
     //[UserPreSize]
     //[/UserPreSize]
@@ -421,6 +433,7 @@ Gui::~Gui()
 void Gui::paint (Graphics& g)
 {
     //[UserPrePaint] Add your own custom painting code here..
+    int curr_voice = display->getCurrVoice();
     //[/UserPrePaint]
 
     g.fillAll (Colour (0xff3c3d3e));
@@ -428,7 +441,7 @@ void Gui::paint (Graphics& g)
     {
         int x = proportionOfWidth (0.3700f), y = proportionOfHeight (0.6311f), width = proportionOfWidth (0.0494f), height = proportionOfHeight (0.0333f);
         String text (TRANS("ATTACK"));
-        Colour fillColour = Colour (0xffcbdc3b);
+        Colour fillColour = Colour (0xff6d6d6d);
         //[UserPaintCustomArguments] Customize the painting arguments here..
         //[/UserPaintCustomArguments]
         g.setColour (fillColour);
@@ -440,7 +453,7 @@ void Gui::paint (Graphics& g)
     {
         int x = proportionOfWidth (0.4500f), y = proportionOfHeight (0.6311f), width = proportionOfWidth (0.0494f), height = proportionOfHeight (0.0333f);
         String text (TRANS("DECAY"));
-        Colour fillColour = Colour (0xffcbdc3b);
+        Colour fillColour = Colour (0xff6d6d6d);
         //[UserPaintCustomArguments] Customize the painting arguments here..
         //[/UserPaintCustomArguments]
         g.setColour (fillColour);
@@ -452,7 +465,7 @@ void Gui::paint (Graphics& g)
     {
         int x = proportionOfWidth (0.5250f), y = proportionOfHeight (0.6311f), width = proportionOfWidth (0.0494f), height = proportionOfHeight (0.0333f);
         String text (TRANS("SUSTAIN"));
-        Colour fillColour = Colour (0xffcbdc3b);
+        Colour fillColour = Colour (0xff6d6d6d);
         //[UserPaintCustomArguments] Customize the painting arguments here..
         //[/UserPaintCustomArguments]
         g.setColour (fillColour);
@@ -464,7 +477,7 @@ void Gui::paint (Graphics& g)
     {
         int x = proportionOfWidth (0.6000f), y = proportionOfHeight (0.6311f), width = proportionOfWidth (0.0494f), height = proportionOfHeight (0.0333f);
         String text (TRANS("RELEASE"));
-        Colour fillColour = Colour (0xffcbdc3b);
+        Colour fillColour = Colour (0xff6d6d6d);
         //[UserPaintCustomArguments] Customize the painting arguments here..
         //[/UserPaintCustomArguments]
         g.setColour (fillColour);
@@ -541,44 +554,47 @@ void Gui::resized()
     voice2Mute->setBounds(proportionOfWidth (0.0321f), proportionOfHeight (0.2113f), 47, 48);
     voice3Mute->setBounds(proportionOfWidth (0.0321f), proportionOfHeight (0.3388f), 47, 48);
     voice4Mute->setBounds(proportionOfWidth (0.0321f), proportionOfHeight (0.4674f), 47, 48);
-    display->setBounds(800-280, 80, 600, 400);
+    display->setBounds(800-282, 80, 600, 400);
     //[/UserResized]
 }
 
 void Gui::sliderValueChanged (Slider* sliderThatWasMoved)
 {
     //[UsersliderValueChanged_Pre]
+    int v_idx = display->getCurrVoice();
     //[/UsersliderValueChanged_Pre]
     for (int i = 0; i < 4; i++)
     {
         if (sliderThatWasMoved == adsrSliders[i])
         {
-            int v_idx = display->getCurrVoice();
-
+            synth->get_adsr(v_idx, adsr);
+            adsr[i] = sliderThatWasMoved->getValue();
+            synth->set_adsr(v_idx, adsr);
         }
     }
     if (sliderThatWasMoved == voice1lvl.get())
     {
         //[UserSliderCode_voice1lvl] -- add your slider handling code here..
-       synth->update_voice_gain(0, voice1lvl.get()->getValue());
+       synth->update_voice_gain(0, Decibels::decibelsToGain ((float) voice1lvl.get()->getValue()));
         //[/UserSliderCode_voice1lvl]
     }
     else if (sliderThatWasMoved == voice1freq.get())
     {
         //[UserSliderCode_voice1freq] -- add your slider handling code here..
-       
+       synth->update_fundamental(0, voice1freq.get()->getValue());
         //[/UserSliderCode_voice1freq]
     }
     else if (sliderThatWasMoved == voice2lvl.get())
     {
         //[UserSliderCode_voice2lvl] -- add your slider handling code here..
-         synth->update_voice_gain(1, voice2lvl.get()->getValue());
+         synth->update_voice_gain(1, Decibels::decibelsToGain ((float) voice2lvl.get()->getValue()));
 
         //[/UserSliderCode_voice2lvl]
     }
     else if (sliderThatWasMoved == voice2freq.get())
     {
         //[UserSliderCode_voice2freq] -- add your slider handling code here..
+        synth->update_fundamental(1, voice2freq.get()->getValue());
         //[/UserSliderCode_voice2freq]
     }
     else if (sliderThatWasMoved == voice3lvl.get())
@@ -586,47 +602,28 @@ void Gui::sliderValueChanged (Slider* sliderThatWasMoved)
         //[UserSliderCode_voice3lvl] -- add your slider handling code here..
          if(synth->get_mute(2))
          {
-             synth->update_voice_gain(2, voice3lvl.get()->getValue());
+             synth->update_voice_gain(1, Decibels::decibelsToGain ((float) voice3lvl.get()->getValue()));
          }
        //[/UserSliderCode_voice3lvl]
     }
     else if (sliderThatWasMoved == voice3freq.get())
     {
         //[UserSliderCode_voice3freq] -- add your slider handling code here..
+        synth->update_fundamental(2, voice3freq.get()->getValue());
         //[/UserSliderCode_voice3freq]
     }
     else if (sliderThatWasMoved == voice4lvl.get())
     {
         //[UserSliderCode_voice4lvl] -- add your slider handling code here..
-         synth->update_voice_gain(3, voice4lvl.get()->getValue());
+         synth->update_voice_gain(1, Decibels::decibelsToGain ((float) voice4lvl.get()->getValue()));
         //[/UserSliderCode_voice4lvl]
     }
     else if (sliderThatWasMoved == voice4freq.get())
     {
         //[UserSliderCode_voice4freq] -- add your slider handling code here..
+        synth->update_fundamental(3, voice4freq.get()->getValue());
         //[/UserSliderCode_voice4freq]
     }
-    // else if (sliderThatWasMoved == atk.get())
-    // {
-    //     //[UserSliderCode_atk] -- add your slider handling code here..
-    //     //[/UserSliderCode_atk]
-    // }
-    // else if (sliderThatWasMoved == dec.get())
-    // {
-    //     //[UserSliderCode_dec] -- add your slider handling code here..
-
-    //     //[/UserSliderCode_dec]
-    // }
-    // else if (sliderThatWasMoved == sus.get())
-    // {
-    //     //[UserSliderCode_sus] -- add your slider handling code here..
-    //     //[/UserSliderCode_sus]
-    // }
-    // else if (sliderThatWasMoved == rel.get())
-    // {
-    //     //[UserSliderCode_rel] -- add your slider handling code here..
-    //     //[/UserSliderCode_rel]
-    // }
     else if (sliderThatWasMoved == lfoRate.get())
     {
         //[UserSliderCode_lfoRate] -- add your slider handling code here..
@@ -683,6 +680,28 @@ void Gui::buttonClicked (Button* buttonThatWasClicked)
             buttonThatWasClicked->setToggleState(buttonState, 0);
             display->setCurrVoice(i);
             display->updateSliders();
+            synth->get_adsr(i, adsr);
+            for (int j = 0; j < 4; j++)
+            {
+                adsrSliders[j]->setValue(adsr[j]);
+                if (i == 0)
+                {
+                    adsrSliders[j]->setColour(Slider::thumbColourId, static_cast<Colour>(Gui::v1On));
+                }
+                else if (i == 1)
+                {
+                    adsrSliders[j]->setColour(Slider::thumbColourId, static_cast<Colour>(Gui::v2On));
+                }
+                else if (i == 2)
+                {
+                    adsrSliders[j]->setColour(Slider::thumbColourId, static_cast<Colour>(Gui::v3On));
+                }
+                else if (i == 3)
+                {
+                    adsrSliders[j]->setColour(Slider::thumbColourId, static_cast<Colour>(Gui::v4On));
+                }
+            }
+            
         }
     }
     //[/UserbuttonClicked_Pre]
@@ -763,6 +782,21 @@ bool Gui::keyStateChanged(bool isKeyDown)
         {
             synth->gate_off();
         }
+    }
+}
+
+void Gui::initADSR()
+{
+    int v_idx = display->getCurrVoice();
+    std::cout<<"voice gotten"<<std::endl;
+    synth->get_adsr(v_idx, adsr);
+    std::cout<<"adsr updated"<<std::endl;
+    for (int i =0; i < 4; i++)
+    {
+        adsrSliders[i]->setValue(adsr[i]);
+        std::cout<<"value updated"<<std::endl;
+        adsrSliders[i]->setColour(Slider::thumbColourId, static_cast<Colour>(Gui::v1On));
+        std::cout<<"color updated"<<std::endl;
     }
 }
 //[/MiscUserCode]

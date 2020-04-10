@@ -36,7 +36,7 @@
 */
 class Display  : public Component,
                   public Slider::Listener
-                  //public Button::Listener
+                  public Button::Listener
 {
 public:
     //==============================================================================
@@ -50,6 +50,7 @@ public:
     void paint (Graphics& g) override;
     void resized() override;
     void sliderValueChanged (Slider* sliderThatWasMoved) override;
+    void buttonClicked (Button* buttonThatWasClicked) override;
     void updateSliders();
     void setCurrVoice(int newVoice);
     int getCurrVoice();
@@ -60,6 +61,7 @@ private:
     Engine* synth;
     int currVoice;
     std::vector<Slider*> harmonics;
+    std::unique_ptr<TextButton> gainLFO;
     //[/UserVariables]
 
     //==============================================================================

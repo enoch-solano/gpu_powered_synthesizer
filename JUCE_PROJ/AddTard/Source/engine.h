@@ -74,6 +74,6 @@ class Engine {
         void set_gain_lfo_rate(float rate);
         void set_gain_lfo_level(float level);
         void set_gain_lfo_type(int type);
-
+        
         void toggle_gain_lfo();
 };

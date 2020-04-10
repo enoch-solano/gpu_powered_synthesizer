@@ -70,6 +70,7 @@ MainComponent::MainComponent()
         guiPtr.reset(new Gui());
         addAndMakeVisible(guiPtr.get());
         guiPtr.get()->synth = Engine::getInstance();
+        guiPtr.get()->initADSR();                                               
         setSize (1600, 900);
         setWantsKeyboardFocus(true);
 }

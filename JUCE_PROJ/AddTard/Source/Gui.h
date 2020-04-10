@@ -60,6 +60,7 @@ public:
                       v1Off = 0xff36677a, v2Off = 0xff7e6447, v3Off = 0xff346d52, v4Off = 0xff6f3966};
     bool keyPressed(const KeyPress &k) override;
     bool keyStateChanged(bool isKeyDown) override;
+    void initADSR();
 
 
 private:
@@ -117,6 +118,31 @@ private:
 
     //==============================================================================
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (Gui)
+};
+
+class DecibelSlider : public Slider
+{
+  public:
+    DecibelSlider(const String &componentName) {}
+
+    double getValueFromText(const String& text) override
+    {
+      auto minusInfdB = -100.0;
+
+      auto decibelText = text.upToFirstOccurrenceOf ("dB", false, false).trim();
+
+      return decibelText.equalsIgnoreCase("-INF") ? minusInfdB
+                                                  :
+                                                    decibelText.getDoubleValue();
+    }
+
+    String getTextFromValue(double value) override
+    {
+      return Decibels::toString (value);
+    }
+
+    private:
+      JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (DecibelSlider)
 };
 
 //[EndFile] You can add extra defines here...

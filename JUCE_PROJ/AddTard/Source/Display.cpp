@@ -44,6 +44,9 @@ Display::Display ()
         harmonics[i]->addListener (this);
     }
 
+    gainLFO.reset(new TextButton("Toggle Gain LFO"));
+    addAndMakeVisible(gainLFO.get());
+    
     synth = Engine::getInstance();
     //[/Constructor_pre]
 
@@ -114,6 +117,11 @@ void Display::sliderValueChanged (Slider* sliderThatWasMoved)
             synth->update_harmonics(currVoice, i, sliderThatWasMoved->getValue());
         }
     }
+}
+
+void Display::buttonClicked(Button* buttonThatWasPressed)
+{
+
 }
 
 void Display::updateSliders()
