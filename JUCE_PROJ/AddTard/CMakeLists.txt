@@ -68,6 +68,8 @@ jucer_project_files("AddTard/Source"
   x         .         .         "Source/Display.h"
   x         .         .         "Source/SynthADSR.h"
   x         .         .         "Source/SynthADSR.cpp"
+  x         .         .         "Source/lfo.h"
+  x         .         .         "Source/lfo.cpp"
 )
 
 jucer_project_module(
