@@ -6,27 +6,35 @@ Engine* Engine::engine = NULL;
 
 
 Engine::Engine(int num_samples) { 
-          
-          adsr = new SynthADSR();
-          
-          // initialize adsr settingsinclude cud
-          adsr->setAttackRate(.1 * SAMPLING_FREQUENCY);	// .1 seconds
-          adsr->setDecayRate(.3 * SAMPLING_FREQUENCY);	// .3 seconds
-          adsr->setReleaseRate(5 * SAMPLING_FREQUENCY);	// 5 seconds
-          adsr->setSustainLevel(.8);
-          num_voices= NUM_VOICES_INIT;
-          num_harms = NUM_HARMS_INIT;
-          num_sinusoids= num_harms * num_voices;
-          this->num_samples = num_samples;
-         
-          Additive::alloc_engine(h_freq_gains, h_angles,
-           h_v_gains, h_tmp_buffer, h_buffer, freq_ratios, num_samples, num_voices, num_harms);
-          for(int i = 0; i < num_voices; i++){
-               h_v_gains[i]  = 1.0;
-          }
-          load_square_wave(0, 440);
-          load_sawtooth(1,440);
-          load_sinewave(2,440);
+
+    gain_lfo = new LFO();
+    gain_lfo->set_level(0.5f);
+    gain_lfo->set_rate(10.f);
+    enable_gain_lfo = 1;
+
+    adsr = new SynthADSR();
+    
+    // initialize adsr settingsinclude cud
+    adsr->setAttackRate(.1 * SAMPLING_FREQUENCY);	// .1 seconds
+    adsr->setDecayRate(.3 * SAMPLING_FREQUENCY);	// .3 seconds
+    adsr->setReleaseRate(5 * SAMPLING_FREQUENCY);	// 5 seconds
+    adsr->setSustainLevel(.8);
+    
+    num_voices= NUM_VOICES_INIT;
+    num_harms = NUM_HARMS_INIT;
+    num_sinusoids= num_harms * num_voices;
+    this->num_samples = num_samples;
+    
+    Additive::alloc_engine(h_freq_gains, h_angles, h_v_gains, h_tmp_buffer, 
+                           h_buffer, freq_ratios, num_samples, num_voices, num_harms);
+    
+    for(int i = 0; i < num_voices; i++){
+        h_v_gains[i]  = 1.0;
+    }
+
+    load_square_wave(0, 440);
+    load_sawtooth(1,440);
+    load_sinewave(2,440);
 }      
 
 void Engine::realloc_engine(int num_samples){
@@ -112,14 +120,32 @@ float Engine::get_gain(int v_idx, int harmonic){
      return h_freq_gains[v_idx*num_harms + harmonic].y;
 }
 
-        
-void Engine::gate_on(){
-    // adsr->gate(ON_G);
-}        
+// ------------ lfo functions ------------- //
 
-void Engine::gate_off(){
-     //adsr->gate(OFF_G);
+void Engine::process_gain_lfo(void *outputBuffer, float angle) {
+    if (enable_gain_lfo) {
+        gain_lfo->batch_gain_process(NUM_SAMPLES, (float*)outputBuffer, angle);
+    }
 }
+
+void Engine::set_gain_lfo_rate(float rate) {
+    gain_lfo->set_rate(rate);
+}
+
+void Engine::set_gain_lfo_level(float level) {
+    gain_lfo->set_level(level);
+}
+
+void Engine::set_gain_lfo_type(int type) {
+    gain_lfo->set_type(type);
+}
+
+void Engine::toggle_gain_lfo() {
+    enable_gain_lfo = !enable_gain_lfo;
+}
+
+        
+
 void Engine::tick(void* outputBuffer){
      //Additive::update_freqs(freq_gains, freq_ratios, num_voices, num_harms, fundamental_freqs)
      Additive::compute_sinusoid_hybrid((float*)outputBuffer, h_freq_gains, h_angles, h_v_gains, h_tmp_buffer, h_buffer,num_sinusoids, time, this->num_samples);
@@ -141,6 +167,7 @@ void Engine::simple_tick(void *outputBuffer, int num_Samples){
      // std::cout << b<< std::endl;
      // std::cout << c<< std::endl;
      // std::cout << d<< std::endl;
+     process_gain_lfo((float*) outputBuffer, angle);
      angle += MathConstants<float>::twoPi * this->num_samples  / 44100.f;
      //std::cout << "angle ion engine" << angle <<std::endl;
      //angle = fmod(angle,MathConstants<float>::twoPi);
